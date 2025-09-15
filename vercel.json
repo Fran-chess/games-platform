@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd ../.. && pnpm build --filter=@games-platform/roulette",
+  "outputDirectory": "apps/roulette/.next",
+  "installCommand": "pnpm install",
+  "framework": "nextjs"
+}
