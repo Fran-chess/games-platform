@@ -7,7 +7,6 @@
 
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@games-platform/ui";
 import TimerCircle from "@/components/ui/TimerCircle";
 import { useTimer } from "@/hooks/useTimer";
 import { useQuestionLogic } from "@/hooks/useQuestionLogic";
@@ -25,6 +24,11 @@ interface QuestionDisplayProps {
     timeUp?: boolean;
   }) => void;
 }
+
+/**
+ * Mapeo de índices a letras para las opciones
+ */
+const OPTION_LABELS = ["A", "B", "C", "D"] as const;
 
 /**
  * Componente QuestionDisplay
@@ -96,67 +100,74 @@ export default function QuestionDisplay({
     audioService.resumeContext();
   }, []);
 
+  /**
+   * Obtiene el estilo mejorado del botón según el estado
+   */
+  const getEnhancedOptionStyle = (option: AnswerOption): string => {
+    const baseStyle = getOptionStyle(option);
+
+    if (!isAnswered) {
+      return `${baseStyle} bg-slate-800/90 hover:bg-slate-700/90
+              border-slate-600 hover:border-blue-500
+              focus:ring-4 focus:ring-blue-500/50 focus:outline-none`;
+    }
+
+    if (answerState === "revealed") {
+      if (option.correct) {
+        return "bg-green-600/90 border-green-400";
+      }
+      if (selectedAnswer === option && !option.correct) {
+        return "bg-red-600/90 border-red-400";
+      }
+      return `${baseStyle} opacity-60`;
+    }
+
+    return baseStyle;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="w-full h-full flex items-center justify-center p-4"
+      className="w-full h-full flex items-center justify-center p-4 relative"
     >
-      <div className="w-full max-w-4xl">
-        <div className="relative">
-          {/* Timer */}
-          <div className="mb-6">
-            <TimerCircle
-              seconds={timer.seconds}
-              initialSeconds={30}
-              isUrgent={timer.isUrgent}
-            />
-          </div>
+      {/* Timer - Reubicado arriba a la derecha, más pequeño */}
+      <div
+        className="absolute top-4 right-4 z-10 scale-75 sm:scale-90"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label={`Tiempo restante: ${timer.seconds} segundos`}
+      >
+        <TimerCircle
+          seconds={timer.seconds}
+          initialSeconds={30}
+          isUrgent={timer.isUrgent}
+        />
+      </div>
 
-          {/* Categoría y Pregunta */}
+      <div className="w-full max-w-5xl">
+        {/* Card con glassmorphism para mejor legibilidad */}
+        <div className="bg-slate-900/70 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8 lg:p-10">
+
+          {/* Categoría y Pregunta - Alineado a la izquierda */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
             className="mb-8"
           >
-            <h2
-              className="
-              font-bold text-yellow-400 text-center mb-4
-              text-2xl
-              sm:text-3xl
-              md:text-4xl
-              lg:text-5xl
-              xl:text-6xl
-            "
-            >
+            {/* Categoría - Menos prominente */}
+            <p className="text-yellow-400/80 font-medium text-sm sm:text-base lg:text-lg mb-3 text-left">
               {question.category}
-            </h2>
-            <p
-              className="
-              text-white font-semibold text-center
-              text-xl
-              sm:text-2xl
-              md:text-3xl
-              lg:text-4xl
-              xl:text-5xl
-            "
-            >
-              {question.text}
             </p>
+            {/* Pregunta - Más prominente */}
+            <h2 className="text-white font-bold text-xl sm:text-2xl lg:text-3xl xl:text-4xl text-left leading-tight">
+              {question.text}
+            </h2>
           </motion.div>
 
           {/* Opciones de Respuesta */}
-          <div
-            className="
-            grid gap-3
-            grid-cols-1
-            sm:gap-4
-            md:grid-cols-2 md:gap-4
-            lg:gap-5
-            xl:gap-6
-          "
-          >
+          <div className="grid gap-3 grid-cols-1 sm:gap-4 lg:grid-cols-2 lg:gap-4">
             {question.options.map((option, index) => (
               <motion.div
                 key={index}
@@ -164,48 +175,63 @@ export default function QuestionDisplay({
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.2 + index * 0.1 }}
               >
-                <Button
+                <button
                   onClick={() => handleAnswer(option)}
                   disabled={isAnswered}
+                  aria-label={`Opción ${OPTION_LABELS[index]}: ${option.text}`}
                   className={`
-                    w-full font-bold text-white
-                    rounded-2xl transition-all duration-500 transform
-                    shadow-xl border-2 border-white/30
-                    p-5 text-lg
-                    sm:p-6 sm:text-xl
-                    md:p-7 md:text-2xl
-                    lg:p-8 lg:text-3xl
-                    xl:p-10 xl:text-4xl
-                    ${getOptionStyle(option)}
-                    ${!isAnswered && "hover:scale-105 active:scale-95 hover:shadow-2xl"}
+                    w-full font-medium text-white
+                    rounded-xl transition-all duration-500 transform
+                    shadow-lg border-2
+                    min-h-[64px] p-4 sm:p-5 lg:p-6
+                    text-base sm:text-lg lg:text-xl
+                    ${getEnhancedOptionStyle(option)}
+                    ${!isAnswered && "hover:scale-[1.02] active:scale-[0.98] hover:shadow-2xl"}
                     ${isAnswered ? "cursor-not-allowed" : "cursor-pointer"}
+                    flex items-center gap-3 text-left
                   `}
                 >
-                  <span className="flex items-center justify-center gap-3">
-                    {/* Icono de resultado */}
-                    {answerState === "revealed" && option.correct && (
+                  {/* Badge con letra A/B/C/D */}
+                  <span className={`
+                    flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11
+                    rounded-full flex items-center justify-center
+                    font-bold text-white text-sm sm:text-base
+                    transition-colors duration-300
+                    ${
+                      answerState === "revealed" && option.correct
+                        ? "bg-green-500"
+                        : answerState === "revealed" && selectedAnswer === option && !option.correct
+                        ? "bg-red-500"
+                        : "bg-blue-600"
+                    }
+                  `}>
+                    {/* Icono de resultado o letra */}
+                    {answerState === "revealed" && option.correct ? (
                       <motion.span
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="text-2xl"
+                        className="text-lg"
                       >
                         ✓
                       </motion.span>
+                    ) : answerState === "revealed" && selectedAnswer === option && !option.correct ? (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="text-lg"
+                      >
+                        ✗
+                      </motion.span>
+                    ) : (
+                      OPTION_LABELS[index]
                     )}
-                    {answerState === "revealed" &&
-                      selectedAnswer === option &&
-                      !option.correct && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="text-2xl"
-                        >
-                          ✗
-                        </motion.span>
-                      )}
+                  </span>
+
+                  {/* Texto de la opción */}
+                  <span className="flex-1">
                     {option.text}
                   </span>
-                </Button>
+                </button>
               </motion.div>
             ))}
           </div>
@@ -222,13 +248,7 @@ export default function QuestionDisplay({
                 <motion.p
                   initial={{ scale: 0.8 }}
                   animate={{ scale: 1 }}
-                  className="
-                  font-bold text-green-400
-                  text-2xl
-                  sm:text-3xl
-                  md:text-4xl
-                  lg:text-5xl
-                "
+                  className="font-bold text-green-400 text-xl sm:text-2xl lg:text-3xl"
                 >
                   ¡Correcto! 🎉
                 </motion.p>
@@ -237,13 +257,7 @@ export default function QuestionDisplay({
                   <motion.p
                     initial={{ scale: 0.8 }}
                     animate={{ scale: 1 }}
-                    className="
-                    font-bold text-red-400 mb-2
-                    text-2xl
-                    sm:text-3xl
-                    md:text-4xl
-                    lg:text-5xl
-                  "
+                    className="font-bold text-red-400 mb-2 text-xl sm:text-2xl lg:text-3xl"
                   >
                     {timer.seconds === 0 ? "¡Tiempo agotado!" : "Incorrecto"}
                   </motion.p>
@@ -252,13 +266,7 @@ export default function QuestionDisplay({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.3 }}
-                      className="
-                      text-white/80
-                      text-base
-                      sm:text-lg
-                      md:text-xl
-                      lg:text-2xl
-                    "
+                      className="text-white/80 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto"
                     >
                       {question.explanation}
                     </motion.p>

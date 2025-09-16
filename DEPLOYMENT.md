@@ -16,21 +16,69 @@ La migración está **COMPLETA**. El monorepo es ahora tu única fuente de códi
 ## 📦 Instalación Local
 
 ```bash
-cd /mnt/c/Users/Francisco/Desktop/Trabajos/redes-evento/games-platform
+# Navegar al directorio del monorepo
+cd games-platform
 pnpm install
 ```
 
-## 🏃 Ejecutar en Desarrollo
+## 🏃 Comandos de Desarrollo y Producción
 
+### 🎮 Desarrollo
+
+#### Opción 1: Desde la raíz (RECOMENDADO)
 ```bash
-# Ejecutar solo la ruleta
+# Solo la ruleta (más eficiente)
 pnpm dev --filter=@games-platform/roulette
 
-# O ejecutar todo el monorepo
+# Todos los proyectos
 pnpm dev
 ```
 
-La app estará disponible en: http://localhost:3000
+#### Opción 2: Desde la carpeta específica
+```bash
+cd apps/roulette
+pnpm dev
+```
+
+La app estará disponible en: **http://localhost:3000**
+
+### 🏗️ Build de Producción
+
+```bash
+# Desde la raíz - Solo ruleta
+pnpm build --filter=@games-platform/roulette
+
+# Desde la carpeta específica
+cd apps/roulette
+pnpm build
+```
+
+### 🚀 Iniciar en Producción
+
+```bash
+# Desde la raíz
+pnpm start --filter=@games-platform/roulette
+
+# Desde la carpeta específica
+cd apps/roulette
+pnpm start
+```
+
+### 🧹 Comandos de Mantenimiento
+
+```bash
+# Limpiar builds y caché
+pnpm clean
+
+# Verificar tipos TypeScript
+pnpm type-check
+
+# Ejecutar linter
+pnpm lint
+
+# Formatear código
+pnpm format
+```
 
 ## 🔧 Variables de Entorno
 

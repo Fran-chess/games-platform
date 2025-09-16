@@ -21,6 +21,7 @@ export default function GamePage() {
   const gameState = useGameStore((state) => state.gameState);
   const setGameState = useGameStore((state) => state.setGameState);
   const lastSpinResultIndex = useGameStore((state) => state.lastSpinResultIndex);
+  const lastSpinSegment = useGameStore((state) => state.lastSpinSegment);
   const setCurrentQuestion = useGameStore((state) => state.setCurrentQuestion);
   const questions = useGameStore((state) => state.questions);
   const setQuestions = useGameStore((state) => state.setQuestions);
@@ -63,17 +64,21 @@ export default function GamePage() {
     }
   }, [questions]);
   
-  // Al girar la ruleta, mostrar la pregunta correspondiente
+  // Al girar la ruleta, mostrar una pregunta aleatoria del segmento ganador
   useEffect(() => {
-    if (lastSpinResultIndex !== null && questionsRef.current && questionsRef.current.length > 0) {
-      const indexToUse = lastSpinResultIndex;
-      if (indexToUse >= 0 && indexToUse < questionsRef.current.length) {
-        const questionToSet = questionsRef.current[indexToUse];
+    if (lastSpinSegment && lastSpinSegment.questions && lastSpinSegment.questions.length > 0) {
+      // Seleccionar una pregunta aleatoria del segmento ganador
+      const segmentQuestions = lastSpinSegment.questions;
+      const randomIndex = Math.floor(Math.random() * segmentQuestions.length);
+      const questionToSet = segmentQuestions[randomIndex];
+
+      // Añadir un delay para una transición más suave
+      setTimeout(() => {
         setCurrentQuestionRef.current(questionToSet);
         setGameStateRef.current("question");
-      }
+      }, 800); // 800ms de delay para transición suave
     }
-  }, [lastSpinResultIndex]);
+  }, [lastSpinSegment]);
   
   // Referencia al componente de la ruleta
   const rouletteRef = useRef<{ spin: () => void }>(null);
@@ -114,22 +119,40 @@ export default function GamePage() {
   if (gameState === "roulette") {
     return (
       <RouletteLayout>
-        <RouletteWheel
-          questions={questions}
-          ref={rouletteRef}
-          onSpinStateChange={handleSpinStateChange}
-          onCenterButtonClick={handleSpin}
-          isSpinning={isSpinning}
-        />
+        <motion.div
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full h-full"
+        >
+          <RouletteWheel
+            questions={questions}
+            ref={rouletteRef}
+            onSpinStateChange={handleSpinStateChange}
+            onCenterButtonClick={handleSpin}
+            isSpinning={isSpinning}
+          />
+        </motion.div>
       </RouletteLayout>
     );
   }
-  
-  // Vista de pregunta
+
+  // Vista de pregunta con transición suave
   if (gameState === "question" && currentQuestion) {
     return (
       <RouletteLayout>
-        <QuestionDisplay question={currentQuestion} />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{
+            duration: 0.6,
+            ease: "easeOut"
+          }}
+          className="w-full h-full"
+        >
+          <QuestionDisplay question={currentQuestion} />
+        </motion.div>
       </RouletteLayout>
     );
   }

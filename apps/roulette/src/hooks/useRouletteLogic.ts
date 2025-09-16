@@ -6,18 +6,15 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import type { Question } from '@/types';
+import { audioService } from '@/services/audio/audioService';
 import {
   type WheelSegment,
   createRouletteSegments,
   type SpinState,
   calculateTargetAngle,
-  calculateSpinDuration,
   updateSpinState,
   calculateWinningSegment,
   triggerVibration,
-  createAudioContext,
-  playTickSound,
-  shouldPlayTick,
 } from '@/utils/roulette';
 
 /**
@@ -43,10 +40,6 @@ interface UseRouletteLogicReturn {
   updateAnimation: () => void;
   handleMouseMove: (x: number, y: number, centerX: number, centerY: number) => void;
   handleMouseLeave: () => void;
-
-  // Refs
-  audioContextRef: React.MutableRefObject<AudioContext | null>;
-  lastTickAngleRef: React.MutableRefObject<number>;
 }
 
 /**
@@ -58,6 +51,7 @@ export function useRouletteLogic({
 }: UseRouletteLogicConfig): UseRouletteLogicReturn {
   // Store de Zustand
   const setLastSpinResultIndex = useGameStore(state => state.setLastSpinResultIndex);
+  const setLastSpinSegment = useGameStore(state => state.setLastSpinSegment);
   const addRecentSpinSegment = useGameStore(state => state.addRecentSpinSegment);
   const recentSpinSegments = useGameStore(state => state.recentSpinSegments);
 
@@ -76,19 +70,13 @@ export function useRouletteLogic({
   const [winnerGlowIntensity, setWinnerGlowIntensity] = useState(0);
 
   // Referencias
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const lastTickAngleRef = useRef(0);
   const animationFrameRef = useRef<number | undefined>(undefined);
 
   // Crear segmentos de la ruleta
   const segments = createRouletteSegments(questions);
 
-  // Inicializar contexto de audio
+  // Cleanup de animación
   useEffect(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = createAudioContext();
-    }
-
     return () => {
       // Capturar el valor actual en una variable local
       const frameId = animationFrameRef.current;
@@ -113,9 +101,9 @@ export function useRouletteLogic({
     setHighlightedSegment(null);
     setWinnerGlowIntensity(0);
 
-    // Calcular parámetros del giro
+    // Calcular parámetros del giro (aleatorio, sin predeterminar ganador)
     const targetAngle = calculateTargetAngle(3, 5);
-    const spinDuration = calculateSpinDuration(targetAngle);
+    const spinDuration = 120; // 2 segundos a 60fps
 
     // Actualizar estado del giro
     setSpinState({
@@ -125,12 +113,11 @@ export function useRouletteLogic({
       targetAngle: spinState.currentAngle + targetAngle,
       spinDuration,
       elapsedFrames: 0,
+      initialAngle: spinState.currentAngle,
     });
 
-    // Reproducir sonido inicial si está disponible
-    if (audioContextRef.current?.state === 'suspended') {
-      audioContextRef.current.resume();
-    }
+    // Reproducir sonido de la ruleta desde archivo MP3
+    audioService.playWheelSpinSound();
 
     // Vibración inicial
     triggerVibration([50, 30, 20]);
@@ -182,13 +169,18 @@ export function useRouletteLogic({
         // Ajustar a un segmento diferente
         const newIndex = (winningIndex + 1) % segments.length;
         setLastSpinResultIndex(newIndex);
+        setLastSpinSegment(segments[newIndex]);
         addRecentSpinSegment(newIndex);
         setHighlightedSegment(newIndex);
       } else {
         setLastSpinResultIndex(winningIndex);
+        setLastSpinSegment(segments[winningIndex]);
         addRecentSpinSegment(winningIndex);
         setHighlightedSegment(winningIndex);
       }
+
+      // Detener sonido de giro
+      audioService.stopWheelSpinSound();
 
       // Animación de glow del ganador
       animateWinnerGlow();
@@ -196,7 +188,7 @@ export function useRouletteLogic({
       // Vibración de victoria
       triggerVibration([100, 50, 100, 50, 200]);
     }
-  }, [segments.length, recentSpinSegments, setLastSpinResultIndex, addRecentSpinSegment, animateWinnerGlow]);
+  }, [segments, recentSpinSegments, setLastSpinResultIndex, setLastSpinSegment, addRecentSpinSegment, animateWinnerGlow]);
 
   /**
    * Actualiza la animación del giro
@@ -207,17 +199,18 @@ export function useRouletteLogic({
     const newState = updateSpinState(spinState);
     setSpinState(newState);
 
-    // Reproducir sonido de tick si corresponde
-    const segmentAngle = 360 / segments.length;
-    if (shouldPlayTick(
-      newState.velocity,
-      segmentAngle,
-      lastTickAngleRef.current,
-      newState.currentAngle
-    )) {
-      playTickSound(audioContextRef.current);
-      lastTickAngleRef.current = newState.currentAngle;
-    }
+    // NO reproducir sonido de tick - solo usamos el archivo MP3
+    // Comentado para usar solo el sonido del archivo MP3
+    // const segmentAngle = 360 / segments.length;
+    // if (shouldPlayTick(
+    //   newState.velocity,
+    //   segmentAngle,
+    //   lastTickAngleRef.current,
+    //   newState.currentAngle
+    // )) {
+    //   playTickSound(audioContextRef.current);
+    //   lastTickAngleRef.current = newState.currentAngle;
+    // }
 
     // Si el giro terminó
     if (!newState.isSpinning) {
@@ -284,9 +277,5 @@ export function useRouletteLogic({
     updateAnimation,
     handleMouseMove,
     handleMouseLeave,
-
-    // Refs
-    audioContextRef,
-    lastTickAngleRef,
   };
 }

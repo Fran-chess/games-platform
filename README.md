@@ -17,33 +17,74 @@ games-platform/
 │   └── config/           # Configuraciones base (tsconfig, tailwind)
 ```
 
-## 🚀 Instalación
+## 🚀 Inicio Rápido
 
 ### Prerrequisitos
 - Node.js >= 20.0.0
 - PNPM >= 9.0.0
 
-### Pasos de instalación
+### Instalación inicial (solo la primera vez)
 
-1. **Instalar dependencias:**
 ```bash
+# Clonar el repositorio
+git clone [tu-repositorio]
 cd games-platform
+
+# Instalar todas las dependencias del monorepo
 pnpm install
 ```
 
-2. **Ejecutar en desarrollo:**
+### 🎮 Trabajar con el Juego de Ruleta
+
+#### Opción 1: Desde la raíz del monorepo (RECOMENDADO)
+
 ```bash
-# Ejecutar todos los proyectos
+# Desarrollo - Solo la ruleta
+pnpm dev --filter=@games-platform/roulette
+
+# Compilar - Solo la ruleta
+pnpm build --filter=@games-platform/roulette
+
+# Iniciar en producción
+pnpm start --filter=@games-platform/roulette
+```
+
+#### Opción 2: Desde la carpeta específica
+
+```bash
+# Navegar a la carpeta del juego
+cd apps/roulette
+
+# Desarrollo (puerto 3000)
 pnpm dev
 
-# Ejecutar solo la ruleta
-pnpm dev --filter=@games-platform/roulette
+# Compilar para producción
+pnpm build
+
+# Iniciar servidor de producción
+pnpm start
 ```
 
-3. **Construir para producción:**
+### 🔥 Comandos más usados
+
 ```bash
-pnpm build
+# Desde la raíz del monorepo:
+pnpm dev --filter=@games-platform/roulette    # Desarrollo de ruleta
+pnpm lint --filter=@games-platform/roulette   # Revisar código
+pnpm build --filter=@games-platform/roulette  # Compilar ruleta
+
+# Para todos los proyectos:
+pnpm dev      # Ejecutar TODO en desarrollo
+pnpm build    # Compilar TODO
+pnpm lint     # Revisar código de TODO
 ```
+
+### 💡 ¿Por qué usar --filter?
+
+El flag `--filter` permite ejecutar comandos solo para un proyecto específico del monorepo, lo que:
+- ⚡ Es más rápido (solo ejecuta lo necesario)
+- 💾 Usa menos recursos
+- 🎯 Te enfoca en el proyecto que estás desarrollando
 
 ## 📦 Packages Compartidos
 

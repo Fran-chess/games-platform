@@ -47,22 +47,27 @@ export interface SpinState {
   targetAngle: number;
   spinDuration: number;
   elapsedFrames: number;
+  initialAngle?: number;
 }
 
 /**
  * Función de easing personalizada para simular la física real de una ruleta
- * Combina aceleración inicial con desaceleración progresiva
+ * Combina aceleración inicial con desaceleración progresiva más suave
  *
  * @param t - Valor normalizado de tiempo (0 a 1)
  * @returns Valor de progreso con easing aplicado (0 a 1)
  */
 export function customEasingFunction(t: number): number {
-  if (t < 0.5) {
-    // Aceleración inicial suave (función cúbica)
-    return 2 * t * t * t;
+  if (t < 0.2) {
+    // Aceleración inicial más suave
+    return 5 * t * t;
+  } else if (t < 0.7) {
+    // Velocidad constante en el medio
+    return 0.2 + (t - 0.2) * 1.4;
   } else {
-    // Desaceleración progresiva más realista (función cuártica)
-    return 1 - Math.pow(-2 * t + 2, 4) / 2;
+    // Desaceleración más gradual usando ease-out quint
+    const adjustedT = (t - 0.7) / 0.3; // Normalizar el último 30%
+    return 0.9 + 0.1 * (1 - Math.pow(1 - adjustedT, 5));
   }
 }
 
@@ -77,7 +82,7 @@ export function calculateInitialVelocity(): number {
 }
 
 /**
- * Calcula el ángulo de destino aleatorio para el giro
+ * Calcula el ángulo de destino aleatorio para el giro de la ruleta
  *
  * @param minRotations - Número mínimo de rotaciones completas
  * @param maxRotations - Número máximo de rotaciones completas
@@ -87,9 +92,14 @@ export function calculateTargetAngle(
   minRotations: number = 3,
   maxRotations: number = 5
 ): number {
+  // Número de rotaciones completas aleatorias
   const rotations = minRotations + Math.random() * (maxRotations - minRotations);
-  const finalPosition = Math.random() * 360;
-  return rotations * 360 + finalPosition;
+
+  // Ángulo final aleatorio (0-360 grados)
+  const finalAngle = Math.random() * 360;
+
+  // Total: rotaciones completas + ángulo final aleatorio
+  return rotations * 360 + finalAngle;
 }
 
 /**
@@ -122,19 +132,27 @@ export function updateSpinState(state: SpinState): SpinState {
   const progress = state.elapsedFrames / state.spinDuration;
 
   if (progress >= 1) {
-    // Giro completado
+    // Giro completado - normalizar ángulo final
+    const finalAngle = state.targetAngle % 360;
     return {
       ...state,
       isSpinning: false,
-      currentAngle: state.targetAngle % 360,
+      currentAngle: finalAngle < 0 ? finalAngle + 360 : finalAngle,
       velocity: 0,
       elapsedFrames: 0,
+      initialAngle: undefined,
     };
   }
 
   // Aplicar easing para obtener el ángulo actual
   const easedProgress = customEasingFunction(progress);
-  const newAngle = easedProgress * state.targetAngle;
+
+  // Usar el ángulo inicial guardado o el actual si es el primer frame
+  const initialAngle = state.initialAngle ?? state.currentAngle;
+  const totalRotation = state.targetAngle - initialAngle;
+
+  // Interpolación con easing
+  const newAngle = initialAngle + totalRotation * easedProgress;
 
   // Calcular velocidad instantánea para efectos (como sonido)
   const deltaAngle = newAngle - state.currentAngle;
@@ -142,9 +160,10 @@ export function updateSpinState(state: SpinState): SpinState {
 
   return {
     ...state,
-    currentAngle: newAngle % 360,
+    currentAngle: newAngle,
     velocity: instantVelocity,
     elapsedFrames: state.elapsedFrames + 1,
+    initialAngle: initialAngle,
   };
 }
 
@@ -171,8 +190,9 @@ export function shouldPlayTick(
 
 /**
  * Calcula el segmento ganador basado en el ángulo final
+ * La flecha está arriba (270° = -90° = -π/2), así que el segmento en esa posición es el ganador
  *
- * @param finalAngle - Ángulo final de la ruleta
+ * @param finalAngle - Ángulo final de la ruleta (en grados)
  * @param numSegments - Número total de segmentos
  * @returns Índice del segmento ganador (0-based)
  */
@@ -183,8 +203,21 @@ export function calculateWinningSegment(
   if (numSegments === 0) return -1;
 
   const segmentAngle = 360 / numSegments;
-  const adjustedAngle = (360 - finalAngle + segmentAngle / 2) % 360;
-  return Math.floor(adjustedAngle / segmentAngle) % numSegments;
+
+  // Normalizar el ángulo para que esté entre 0 y 360
+  let normalizedAngle = finalAngle % 360;
+  if (normalizedAngle < 0) normalizedAngle += 360;
+
+  // La ruleta rota en sentido horario
+  // Los segmentos están numerados 0, 1, 2... en sentido horario empezando desde arriba
+  // Cuando angle=0: segmento 0 está arriba
+  // Cuando angle=60 (para 6 segmentos): segmento 1 está arriba
+  // Cuando angle=120: segmento 2 está arriba, etc.
+
+  // El segmento que está arriba es directamente proporcional al ángulo de rotación
+  const segmentIndex = Math.round(normalizedAngle / segmentAngle) % numSegments;
+
+  return segmentIndex;
 }
 
 /**

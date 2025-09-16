@@ -23,18 +23,26 @@ export interface Question {
 
 export type GameState = 'waiting' | 'roulette' | 'question' | 'prize';
 
+export interface WheelSegment {
+  text: string;
+  color: string;
+  questions: Question[];
+}
+
 export interface GameStore {
   gameState: GameState;
   currentQuestion: Question | null;
   lastSpinResultIndex: number | null;
+  lastSpinSegment: WheelSegment | null;
   recentSpinSegments: number[];
   questions: Question[];
   prizeFeedback: PrizeFeedback;
   showConfetti: boolean;
-  
+
   setGameState: (state: GameState) => void;
   setCurrentQuestion: (question: Question | null) => void;
   setLastSpinResultIndex: (index: number | null) => void;
+  setLastSpinSegment: (segment: WheelSegment | null) => void;
   addRecentSpinSegment: (segmentIndex: number) => void;
   resetCurrentGame: () => void;
   resetCurrentGameData: () => void;

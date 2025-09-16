@@ -1,9 +1,10 @@
 // src/store/gameStore.ts
 import { create } from 'zustand';
-import type { 
-  Question, 
+import type {
+  Question,
   GameStore,
-  GameState
+  GameState,
+  WheelSegment
 } from '@/types';
 
 // --- STORE SIMPLIFICADO PARA EL JUEGO ---
@@ -12,6 +13,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gameState: 'waiting' as GameState,
   currentQuestion: null,
   lastSpinResultIndex: null,
+  lastSpinSegment: null,
   recentSpinSegments: [],
   questions: [],
   showConfetti: false,
@@ -33,6 +35,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   
   setLastSpinResultIndex: (index) => set({ lastSpinResultIndex: index }),
 
+  setLastSpinSegment: (segment) => set({ lastSpinSegment: segment }),
+
   // Función para actualizar historial de segmentos
   addRecentSpinSegment: (segmentIndex: number) => set((state) => {
     const maxHistoryLength = 3; // Recordar últimos 3 giros
@@ -50,6 +54,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   resetCurrentGameData: () => set({
     currentQuestion: null,
     lastSpinResultIndex: null,
+    lastSpinSegment: null,
     recentSpinSegments: [],
     gameState: 'waiting' as GameState,
   }),
@@ -74,6 +79,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       gameState: 'waiting' as GameState,
       currentQuestion: null,
       lastSpinResultIndex: null,
+      lastSpinSegment: null,
       recentSpinSegments: [],
       showConfetti: false,
       prizeFeedback: {

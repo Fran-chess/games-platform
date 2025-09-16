@@ -87,6 +87,16 @@ export function drawSegment(
   isHighlighted: boolean = false,
   glowIntensity: number = 0
 ): void {
+  ctx.save();
+
+  // Si hay glow del ganador, expandir ligeramente el segmento
+  if (glowIntensity > 0) {
+    const scale = 1 + (glowIntensity * 0.05); // Expande hasta 5%
+    ctx.translate(centerX, centerY);
+    ctx.scale(scale, scale);
+    ctx.translate(-centerX, -centerY);
+  }
+
   // Dibujar el segmento principal
   ctx.beginPath();
   ctx.moveTo(centerX, centerY);
@@ -103,19 +113,27 @@ export function drawSegment(
     ctx.fill();
   }
 
-  // Aplicar glow del ganador si existe
+  // Aplicar glow del ganador con efecto más notorio
   if (glowIntensity > 0) {
-    ctx.save();
-    ctx.globalAlpha = glowIntensity;
+    // Overlay brillante
+    ctx.globalAlpha = glowIntensity * 0.7;
     ctx.fillStyle = THEME_COLORS.WINNER_GLOW;
     ctx.fill();
-    ctx.restore();
+
+    // Borde brillante más grueso
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 4 + (glowIntensity * 6); // Borde más grueso cuando gana
+    ctx.globalAlpha = glowIntensity;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
-  // Dibujar borde del segmento
+  // Dibujar borde normal del segmento
   ctx.strokeStyle = THEME_COLORS.SEGMENT_BORDER;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = glowIntensity > 0 ? 3 : 2;
   ctx.stroke();
+
+  ctx.restore();
 }
 
 /**
@@ -130,25 +148,34 @@ export function drawSegmentText(
   centerX: number,
   centerY: number,
   radius: number,
-  segmentColor: string
+  segmentColor: string,
+  isWinner: boolean = false
 ): void {
   ctx.save();
 
   // Calcular el ángulo medio del segmento
   const middleAngle = (startAngle + endAngle) / 2;
 
-  // Configurar estilo del texto
-  const fontSize = Math.min(22, Math.max(16, radius * 0.09));
+  // Configurar estilo del texto - más grande si es ganador
+  const baseFontSize = Math.min(22, Math.max(16, radius * 0.09));
+  const fontSize = isWinner ? baseFontSize * 1.2 : baseFontSize;
   ctx.font = `bold ${fontSize}px sans-serif`;
-  ctx.fillStyle = getContrastColor(segmentColor);
+  ctx.fillStyle = isWinner ? '#FFFFFF' : getContrastColor(segmentColor);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  // Sombra para mejor legibilidad
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-  ctx.shadowBlur = 3;
-  ctx.shadowOffsetX = 1;
-  ctx.shadowOffsetY = 1;
+  // Sombra para mejor legibilidad - más fuerte si es ganador
+  if (isWinner) {
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+  } else {
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+  }
 
   // Dividir el texto en líneas apropiadamente
   const words = text.split(' ');
@@ -380,6 +407,7 @@ export function renderRoulette(context: RenderContext): void {
     );
 
     // Dibujar texto del segmento
+    const isWinner = index === highlightedSegment && winnerGlowIntensity > 0;
     drawSegmentText(
       ctx,
       segment.text,
@@ -388,7 +416,8 @@ export function renderRoulette(context: RenderContext): void {
       centerX,
       centerY,
       radius,
-      segment.color
+      segment.color,
+      isWinner
     );
   });
 

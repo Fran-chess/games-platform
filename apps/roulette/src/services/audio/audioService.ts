@@ -101,12 +101,14 @@ export class AudioService {
   private masterVolume: number = 1;
   private isMuted: boolean = false;
   private activeNodes: Set<AudioNode> = new Set();
+  private wheelSpinAudio: HTMLAudioElement | null = null;
 
   /**
    * Constructor privado para patrón Singleton
    */
   private constructor() {
     this.initializeContext();
+    this.initializeWheelSpinAudio();
   }
 
   /**
@@ -133,6 +135,21 @@ export class AudioService {
       this.audioContext = new AudioContextClass();
     } catch (error) {
       console.warn('AudioContext initialization failed:', error);
+    }
+  }
+
+  /**
+   * Inicializa el audio de la ruleta
+   */
+  private initializeWheelSpinAudio(): void {
+    if (typeof window === 'undefined') return;
+
+    try {
+      this.wheelSpinAudio = new Audio('/sounds/wheel-spin.mp3');
+      this.wheelSpinAudio.volume = 0.5;
+      this.wheelSpinAudio.preload = 'auto';
+    } catch (error) {
+      console.warn('Failed to initialize wheel spin audio:', error);
     }
   }
 
@@ -230,6 +247,37 @@ export class AudioService {
   }
 
   /**
+   * Reproduce el sonido de giro de la ruleta
+   */
+  public playWheelSpinSound(): void {
+    if (!this.wheelSpinAudio || this.isMuted) return;
+
+    try {
+      this.wheelSpinAudio.currentTime = 0;
+      this.wheelSpinAudio.volume = this.masterVolume * 0.5;
+      this.wheelSpinAudio.play().catch(error => {
+        console.warn('Failed to play wheel spin sound:', error);
+      });
+    } catch (error) {
+      console.warn('Error playing wheel spin sound:', error);
+    }
+  }
+
+  /**
+   * Detiene el sonido de giro de la ruleta
+   */
+  public stopWheelSpinSound(): void {
+    if (!this.wheelSpinAudio) return;
+
+    try {
+      this.wheelSpinAudio.pause();
+      this.wheelSpinAudio.currentTime = 0;
+    } catch (error) {
+      console.warn('Error stopping wheel spin sound:', error);
+    }
+  }
+
+  /**
    * Reproduce sonido de victoria (melodía ascendente)
    */
   public playVictorySound(): void {
@@ -290,6 +338,7 @@ export class AudioService {
       }
     });
     this.activeNodes.clear();
+    this.stopWheelSpinSound();
   }
 
   /**
