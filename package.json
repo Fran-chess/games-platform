@@ -2,27 +2,25 @@
   "name": "games-platform",
   "version": "1.0.0",
   "private": true,
-  "description": "Monorepo de juegos interactivos",
+  "description": "",
+  "main": "index.js",
   "scripts": {
     "dev": "turbo run dev",
     "dev:roulette": "pnpm --filter @games-platform/roulette dev",
     "dev:memotest": "pnpm --filter @games-platform/memotest dev",
     "build": "turbo run build",
+    "build:roulette": "pnpm --filter @games-platform/roulette build",
     "start": "turbo run start",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
+    "test": "echo \"No tests yet\" && exit 0"
   },
-  "devDependencies": {
-    "turbo": "^2.3.3",
-    "typescript": "^5.7.2",
-    "@types/node": "^22.10.2",
-    "prettier": "^3.4.2"
-  },
-  "packageManager": "pnpm@9.15.0",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
-  }
+    "node": ">=20.12.0"
+  },
+  "packageManager": "pnpm@10.17.0"
 }
