@@ -83,22 +83,49 @@ export function calculateInitialVelocity(): number {
 
 /**
  * Calcula el ángulo de destino aleatorio para el giro de la ruleta
+ * Opcionalmente puede apuntar a un segmento específico
  *
  * @param minRotations - Número mínimo de rotaciones completas
  * @param maxRotations - Número máximo de rotaciones completas
+ * @param targetSegmentIndex - Índice del segmento objetivo (opcional)
+ * @param numSegments - Número total de segmentos (requerido si se especifica targetSegmentIndex)
  * @returns Ángulo de destino en grados
  */
 export function calculateTargetAngle(
   minRotations: number = 3,
-  maxRotations: number = 5
+  maxRotations: number = 5,
+  targetSegmentIndex?: number,
+  numSegments?: number
 ): number {
   // Número de rotaciones completas aleatorias
   const rotations = minRotations + Math.random() * (maxRotations - minRotations);
 
-  // Ángulo final aleatorio (0-360 grados)
-  const finalAngle = Math.random() * 360;
+  let finalAngle: number;
 
-  // Total: rotaciones completas + ángulo final aleatorio
+  if (targetSegmentIndex !== undefined && numSegments !== undefined && numSegments > 0) {
+    // Si queremos apuntar a un segmento específico
+    const seg = 360 / numSegments;
+
+    // Centro del segmento objetivo
+    const center = (targetSegmentIndex + 0.5) * seg;
+
+    // Queremos que el centro del segmento llegue al marcador superior
+    // El marcador está arriba, así que necesitamos que el segmento rote hasta esa posición
+    finalAngle = 360 - center;
+
+    // Agregar un pequeño offset aleatorio para que no siempre caiga exactamente en el centro
+    const offset = (Math.random() - 0.5) * seg * 0.6; // ±30% del tamaño del segmento
+    finalAngle += offset;
+
+    // Normalizar a 0-360
+    finalAngle = finalAngle % 360;
+    if (finalAngle < 0) finalAngle += 360;
+  } else {
+    // Ángulo final completamente aleatorio (0-360 grados)
+    finalAngle = Math.random() * 360;
+  }
+
+  // Total: rotaciones completas + ángulo final
   return rotations * 360 + finalAngle;
 }
 
@@ -192,32 +219,31 @@ export function shouldPlayTick(
  * Calcula el segmento ganador basado en el ángulo final
  * La flecha está arriba (270° = -90° = -π/2), así que el segmento en esa posición es el ganador
  *
- * @param finalAngle - Ángulo final de la ruleta (en grados)
+ * @param finalAngleDeg - Ángulo final de la ruleta (en grados)
  * @param numSegments - Número total de segmentos
  * @returns Índice del segmento ganador (0-based)
  */
 export function calculateWinningSegment(
-  finalAngle: number,
+  finalAngleDeg: number,
   numSegments: number
 ): number {
-  if (numSegments === 0) return -1;
+  if (numSegments <= 0) return -1;
 
-  const segmentAngle = 360 / numSegments;
+  const seg = 360 / numSegments;
 
-  // Normalizar el ángulo para que esté entre 0 y 360
-  let normalizedAngle = finalAngle % 360;
-  if (normalizedAngle < 0) normalizedAngle += 360;
+  // Normalizar ángulo (rueda) a 0..360
+  let theta = finalAngleDeg % 360;
+  if (theta < 0) theta += 360;
 
-  // La ruleta rota en sentido horario
-  // Los segmentos están numerados 0, 1, 2... en sentido horario empezando desde arriba
-  // Cuando angle=0: segmento 0 está arriba
-  // Cuando angle=60 (para 6 segmentos): segmento 1 está arriba
-  // Cuando angle=120: segmento 2 está arriba, etc.
+  // Marcador arriba (−90° = 270°). Convertimos a "ángulo bajo el marcador".
+  // Cuando la ruleta gira, el segmento que estaba atrás ahora está adelante
+  const relative = (360 - theta) % 360;
 
-  // El segmento que está arriba es directamente proporcional al ángulo de rotación
-  const segmentIndex = Math.round(normalizedAngle / segmentAngle) % numSegments;
+  // Pequeño epsilon para no caer en el sector vecino por flotantes
+  const EPS = 1e-6;
+  const idx = Math.floor((relative + EPS) / seg) % numSegments;
 
-  return segmentIndex;
+  return idx < 0 ? idx + numSegments : idx;
 }
 
 /**

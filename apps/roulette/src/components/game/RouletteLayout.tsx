@@ -35,7 +35,7 @@ export default function RouletteLayout({ children, buttons }: RouletteLayoutProp
       />
 
       {/* Layout con espacio optimizado por la eliminación del botón inferior */}
-      <main className="h-full flex flex-col w-full items-center justify-between py-6">
+      <main className="h-full flex flex-col w-full items-center justify-between">
         {/* LOGO - Tamaño original grande */}
         <div className="flex justify-center items-center z-20 relative mb-4">
           <Logo

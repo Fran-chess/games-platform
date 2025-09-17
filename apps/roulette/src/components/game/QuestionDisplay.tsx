@@ -133,7 +133,7 @@ export default function QuestionDisplay({
     >
       {/* Timer - Reubicado arriba a la derecha, más pequeño */}
       <div
-        className="absolute top-4 right-4 z-10 scale-75 sm:scale-90"
+        className="fixed top-40 sm:top-24 left-1/2 -translate-x-1/2 z-50 scale-75 sm:scale-90"
         aria-live="polite"
         aria-atomic="true"
         aria-label={`Tiempo restante: ${timer.seconds} segundos`}

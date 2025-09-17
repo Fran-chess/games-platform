@@ -5,7 +5,10 @@
   "description": "Monorepo de juegos interactivos",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:roulette": "pnpm --filter @games-platform/roulette dev",
+    "dev:memotest": "pnpm --filter @games-platform/memotest dev",
     "build": "turbo run build",
+    "start": "turbo run start",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean",
