@@ -1,0 +1,157 @@
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      screens: {
+        'xs': '320px',
+        'sm': '640px',
+        'md': '768px',
+        'lg': '1024px',
+        'xl': '1280px',
+        '2xl': '1536px',
+        'mobile': { 'max': '599px' },
+        'tablet': { 'min': '600px', 'max': '1279px' },
+        'tablet-portrait': { 'raw': '(min-width: 768px) and (max-width: 1200px) and (orientation: portrait) and (min-height: 1000px)' },
+        'tv': { 'raw': '(min-width: 2160px) and (min-height: 3840px), (min-width: 3840px) and (min-height: 2160px)' },
+        'desktop': { 'min': '1280px' },
+        'tablet-sm': '601px',
+        'tablet-md': '768px',
+        'tablet-lg': '1024px',
+        'tv-sm': '1025px',
+        'tv-md': '1440px',
+        'tv-lg': '1920px',
+        'tv-portrait': '2160px',
+        'tv-portrait-height': { 'raw': '(min-height: 3840px)' },
+        'tv-full': { 'raw': '(min-width: 2160px) and (min-height: 3840px)' },
+      },
+      colors: {
+        // Colores oficiales de marca DarSalud
+        "brand": {
+          "blue": "#0435A3",      // Azul intenso principal
+          "green": "#04EBCF",     // Verde salud vibrante
+          "cyan": "#08C3FC",      // Celeste medio brillante
+          "purple": "#F1AAFA",    // Lila acento suave
+          "blue-dark": "#032B7A", // Azul más oscuro para gradientes
+          "blue-light": "#0652D4", // Azul más claro para gradientes
+        },
+        // Colores legacy (mantener por compatibilidad)
+        "azul-intenso": "#192A6E",
+        "verde-salud": "#5ACCC1",
+        "celeste-medio": "#40C0EF",
+        "amarillo-ds": "#F2BD35",
+        "rosado-lila": "#D5A7CD",
+        "main-dark": "#121F4B",
+      },
+      backgroundImage: {
+        'main-gradient': 'linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f172a 50%, #1e293b 75%, #334155 100%)',
+        // Gradiente profesional con colores de marca DarSalud - Luminoso y elegante
+        'game-gradient': 'linear-gradient(135deg, #08C3FC 0%, #0435A3 40%, #0652D4 60%, #04EBCF 100%)',
+        // Variantes de gradientes de marca
+        'brand-gradient': 'linear-gradient(180deg, #0435A3 0%, #08C3FC 50%, #04EBCF 100%)',
+        'brand-gradient-soft': 'linear-gradient(135deg, #0435A3 0%, #08C3FC 35%, #04EBCF 65%, #F1AAFA 100%)',
+        'brand-gradient-radial': 'radial-gradient(circle at center, #08C3FC 0%, #0435A3 100%)',
+      },
+      fontFamily: {
+        sans: ["Marine-Regular", "sans-serif"],
+        marineBold: ["Marine-Bold", "sans-serif"],
+        marineBlack: ["Marine-Black", "sans-serif"],
+      },
+      spacing: {
+        'touch-sm': '0.75rem',
+        'touch-md': '1.5rem',
+        'touch-lg': '2.5rem',
+        'touch-xl': '3.5rem',
+        'tv-xs': '1rem',
+        'tv-sm': '2rem',
+        'tv-md': '3rem',
+        'tv-lg': '4rem',
+        'tv-xl': '6rem',
+        'tv-2xl': '8rem',
+      },
+      fontSize: {
+        'touch-xs': ['0.875rem', { lineHeight: '1.25rem' }],
+        'touch-sm': ['1rem', { lineHeight: '1.5rem' }],
+        'touch-base': ['1.125rem', { lineHeight: '1.75rem' }],
+        'touch-lg': ['1.375rem', { lineHeight: '2rem' }],
+        'touch-xl': ['1.75rem', { lineHeight: '2.25rem' }],
+        'touch-2xl': ['2.25rem', { lineHeight: '2.75rem' }],
+        'touch-3xl': ['3rem', { lineHeight: '3.5rem' }],
+        'touch-4xl': ['4rem', { lineHeight: '4.5rem' }],
+        'tv-xs': ['1.5rem', { lineHeight: '2rem' }],
+        'tv-sm': ['2rem', { lineHeight: '2.5rem' }],
+        'tv-base': ['2.5rem', { lineHeight: '3rem' }],
+        'tv-lg': ['3rem', { lineHeight: '3.5rem' }],
+        'tv-xl': ['4rem', { lineHeight: '4.5rem' }],
+        'tv-2xl': ['5rem', { lineHeight: '5.5rem' }],
+        'tv-3xl': ['6rem', { lineHeight: '6.5rem' }],
+        'tv-4xl': ['7rem', { lineHeight: '7.5rem' }],
+      },
+      borderRadius: {
+        'touch-sm': '6px',
+        'touch-md': '8px',
+        'touch-lg': '12px',
+        'touch-xl': '16px',
+        'touch-2xl': '20px',
+        'tv-sm': '12px',
+        'tv-md': '16px',
+        'tv-lg': '24px',
+        'tv-xl': '32px',
+        'tv-2xl': '40px',
+      },
+      boxShadow: {
+        'touch-sm': '0 4px 12px rgba(0, 0, 0, 0.1)',
+        'touch-md': '0 8px 25px rgba(0, 0, 0, 0.15)',
+        'touch-lg': '0 12px 35px rgba(0, 0, 0, 0.25)',
+        'touch-xl': '0 16px 45px rgba(0, 0, 0, 0.3)',
+        'tv-sm': '0 8px 24px rgba(0, 0, 0, 0.1)',
+        'tv-md': '0 16px 48px rgba(0, 0, 0, 0.15)',
+        'tv-lg': '0 24px 72px rgba(0, 0, 0, 0.25)',
+        'tv-xl': '0 32px 96px rgba(0, 0, 0, 0.3)',
+      },
+      animation: {
+        "pulse-once": "pulseCustom 1s cubic-bezier(0.4, 0, 0.6, 1) 1",
+        "tv-pulse": "tv-pulse 2s infinite",
+        "tablet-bounce": "tablet-bounce 0.3s ease-out",
+        "touch-hover": "touch-hover 0.2s ease",
+        "tv-portrait-pulse": "tv-portrait-pulse 3s infinite ease-in-out",
+        "tv-portrait-bounce": "tv-portrait-bounce 0.4s ease-out",
+      },
+      keyframes: {
+        pulseCustom: {
+          "0%, 100%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: ".8", transform: "scale(1.03)" },
+        },
+        "tv-pulse": {
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.05)", opacity: "0.9" },
+        },
+        "tablet-bounce": {
+          "0%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-4px)" },
+          "100%": { transform: "translateY(0)" },
+        },
+        "touch-hover": {
+          "0%": { transform: "translateY(0)" },
+          "100%": { transform: "translateY(-2px)" },
+        },
+        "tv-portrait-pulse": {
+          "0%, 100%": { transform: "scale(1)", boxShadow: "0 0 20px 6px rgba(16, 185, 129, 0.3)" },
+          "50%": { transform: "scale(1.02)", boxShadow: "0 0 30px 10px rgba(16, 185, 129, 0.5)" },
+        },
+        "tv-portrait-bounce": {
+          "0%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" },
+          "100%": { transform: "translateY(0)" },
+        },
+      },
+    },
+  },
+  plugins: [],
+};
+export default config;

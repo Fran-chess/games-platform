@@ -1,0 +1,78 @@
+{
+  "name": "DarSalud - Juego Interactivo",
+  "short_name": "DarSalud",
+  "description": "Juego interactivo de DarSalud optimizado para tablets (Admin) y TV 4K (Viewer) con sincronización en tiempo real",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "theme_color": "#192A6E",
+  "background_color": "#121F4B",
+  "scope": "/",
+  "categories": ["games", "education", "productivity"],
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Panel Administración",
+      "short_name": "Admin",
+      "description": "Panel de administración para tablets - Control del juego",
+      "url": "/admin",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Vista TV",
+      "short_name": "TV",
+      "description": "Vista para TV 4K - Pantalla de visualización",
+      "url": "/tv",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "protocol_handlers": [],
+  "edge_side_panel": {
+    "preferred_width": 320
+  },
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "capture_links": "existing-client-navigate",
+  "handle_links": "preferred",
+  "id": "darsalud-interactive-game",
+  "screenshots": [],
+  "iarc_rating_id": "",
+  "file_handlers": [],
+  "version": "1.0.0"
+} 
