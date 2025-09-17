@@ -1,0 +1,264 @@
+@import "tailwindcss";
+
+@layer base {
+  @font-face {
+    font-family: "Marine-Regular";
+    src: local("Arial"), url("/fonts/marine.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Marine-Bold";
+    src: local("Arial Bold"), url("/fonts/marine.ttf") format("truetype");
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Marine-Black";
+    src: local("Arial Black"), url("/fonts/marine.ttf") format("truetype");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  body {
+    @apply font-sans;
+  }
+
+  .font-marineRegular {
+    font-family: "Marine-Regular", Arial, sans-serif;
+  }
+
+  .font-marineBold {
+    font-family: "Marine-Bold", "Arial Bold", sans-serif;
+    font-weight: bold;
+  }
+
+  .font-marineBlack {
+    font-family: "Marine-Black", "Arial Black", sans-serif;
+    font-weight: 900;
+  }
+}
+
+/* Layout responsivo base */
+html,
+body {
+  height: 100%;
+  min-height: 100dvh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  position: relative;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  color: white;
+}
+
+/* Prevenir zoom en iOS */
+input,
+select,
+textarea,
+button {
+  font-size: 16px !important;
+  touch-action: manipulation;
+}
+
+/* Mejoras para el rendimiento */
+* {
+  box-sizing: border-box;
+}
+
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Ocultar scrollbar pero mantener funcionalidad */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mejoras para el layout de la ruleta */
+.wheel-canvas {
+  filter: drop-shadow(0 15px 40px rgba(0, 0, 0, 0.4));
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+/* Gradiente de marca DarSalud - Luminoso y profesional */
+.bg-game-gradient {
+  background: linear-gradient(135deg,
+    #08C3FC 0%,     /* Celeste brillante */
+    #0652D4 30%,    /* Azul medio */
+    #0435A3 50%,    /* Azul intenso */
+    #04EBCF 80%,    /* Verde salud */
+    #08C3FC 100%    /* Celeste brillante */
+  );
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Texto ultra legible */
+.text-ultra-legible {
+  text-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.9),
+    0 4px 8px rgba(0, 0, 0, 0.7),
+    0 1px 2px rgba(0, 0, 0, 1);
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+/* Animaciones suaves */
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
+  50% { transform: translateY(-10px) rotate(180deg); opacity: 1; }
+}
+
+.gentle-float {
+  animation: gentleFloat 8s infinite ease-in-out;
+}
+
+/* Animación shimmer para botones */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Animaciones para confetti */
+@keyframes confetti-fall {
+  to {
+    transform: translateY(100vh) rotate(360deg);
+  }
+}
+
+.confetti {
+  animation: confetti-fall linear;
+}
+
+/* Clases de animación para transiciones */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+.fade-out {
+  animation: fadeOut 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Efecto ripple para botones táctiles */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(0);
+  animation: ripple-animation 0.6s ease-out;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Reset de estilos para inputs y botones */
+button,
+input,
+select,
+textarea {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Utilidad para centrar absolutamente */
+.center-absolute {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Z-index layers */
+.z-bg { z-index: -1; }
+.z-base { z-index: 0; }
+.z-dropdown { z-index: 1000; }
+.z-sticky { z-index: 1020; }
+.z-fixed { z-index: 1030; }
+.z-modal-backdrop { z-index: 1040; }
+.z-modal { z-index: 1050; }
+.z-popover { z-index: 1060; }
+.z-tooltip { z-index: 1070; }
+.z-notification { z-index: 1080; }
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
