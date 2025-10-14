@@ -54,6 +54,10 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
         {/* [modificación] Link al manifest para PWA */}
         <link rel="manifest" href="/manifest.json" />
+        {/* Forzar orientación landscape */}
+        <meta name="screen-orientation" content="landscape" />
+        <meta name="x5-orientation" content="landscape" />
+        <meta name="x5-fullscreen" content="true" />
       </head>
       <body className="bg-game-gradient h-screen font-sans text-white">
         <ShellRootClient>{children}</ShellRootClient>

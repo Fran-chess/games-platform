@@ -1,5 +1,5 @@
 /**
- * MemoCard Component
+ * MemoCard Component - Rediseñado para tablets
  * Carta interactiva con animaciones 3D profesionales
  * @module MemoCard
  */
@@ -7,17 +7,17 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Card as CardType } from '@/store/memoStore';
+import type { MemoCard as MemoCardType } from '@/services/game/memoService';
 import { memo } from 'react';
 
 interface MemoCardProps {
-  card: CardType;
+  card: MemoCardType;
   onClick: (id: string) => void;
   disabled?: boolean;
 }
 
 /**
- * Componente Card con animaciones fluidas y diseño profesional
+ * Componente Card optimizado para tablets (sin hover)
  * Usa memo para optimizar re-renders
  */
 export const MemoCard = memo(function MemoCard({
@@ -33,23 +33,22 @@ export const MemoCard = memo(function MemoCard({
 
   return (
     <motion.div
-      className="relative w-full h-full preserve-3d cursor-pointer"
+      className="relative w-full h-full cursor-pointer preserve-3d"
       onClick={handleClick}
-      whileHover={!disabled && !card.isFlipped ? { scale: 1.05 } : {}}
-      whileTap={!disabled && !card.isFlipped ? { scale: 0.95 } : {}}
+      whileTap={!disabled && !card.isFlipped && !card.isMatched ? { scale: 0.95 } : {}}
       initial={false}
       animate={{
         rotateY: card.isFlipped || card.isMatched ? 180 : 0,
-        scale: card.isMatched ? 0.85 : 1,
+        scale: card.isMatched ? 0.9 : 1,
       }}
       transition={{
         rotateY: {
           duration: 0.6,
-          ease: "easeInOut"
+          ease: [0.4, 0, 0.2, 1]
         },
         scale: {
           duration: 0.3,
-          ease: "easeOut"
+          ease: 'easeOut'
         }
       }}
       style={{
@@ -57,84 +56,112 @@ export const MemoCard = memo(function MemoCard({
         perspective: 1000
       }}
     >
-      {/* Parte trasera de la carta */}
+      {/* Parte trasera de la carta - Logo institucional DarSalud */}
       <motion.div
         className={`
-          absolute inset-0 rounded-xl backface-hidden
-          bg-gradient-to-br from-cyan-500 to-blue-600
-          shadow-2xl border-2 border-cyan-400/50
+          absolute inset-0 rounded-2xl
+          bg-white/15 backdrop-blur-sm
+          shadow-xl border-4 border-cyan-400/60
           flex items-center justify-center
-          ${disabled ? 'cursor-not-allowed opacity-50' : ''}
+          backface-hidden overflow-hidden
+          ${disabled ? 'opacity-50' : ''}
         `}
         style={{
           backfaceVisibility: 'hidden',
         }}
       >
-        <div className="text-white/30 text-6xl font-bold">
-          ⚕️
+        {/* Logo DarSalud centrado */}
+        <div className="relative z-10 w-[70%] h-[70%] flex items-center justify-center">
+          <img
+            src="/images/8.svg"
+            alt="DarSalud Logo"
+            className="w-full h-full object-contain select-none pointer-events-none"
+            draggable={false}
+          />
         </div>
-        <div className="absolute inset-0 bg-white/10 rounded-xl backdrop-blur-sm" />
+
+        {/* Brillo sutil para elegancia */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rounded-2xl pointer-events-none" />
+
+        {/* Borde interno decorativo */}
+        <div className="absolute inset-2 rounded-xl border border-white/20 pointer-events-none" />
       </motion.div>
 
-      {/* Parte frontal de la carta */}
+      {/* Parte frontal de la carta - Glassmorphism profesional */}
       <motion.div
         className={`
-          absolute inset-0 rounded-xl backface-hidden
-          ${card.isMatched
-            ? 'bg-gradient-to-br from-green-400 to-emerald-500 border-green-300'
-            : 'bg-gradient-to-br from-white to-gray-100 border-white/50'
-          }
-          shadow-2xl border-2
+          absolute inset-0 rounded-2xl
+          border-4
           flex items-center justify-center
+          backface-hidden overflow-hidden
           transition-all duration-300
+          ${card.isMatched
+            ? 'bg-gradient-to-br from-emerald-400/95 via-green-500/95 to-emerald-600/95 border-emerald-300/70 shadow-[0_8px_32px_rgba(16,185,129,0.4)]'
+            : 'bg-white/95 backdrop-blur-md border-cyan-400/40 shadow-[0_4px_24px_rgba(4,53,163,0.2)]'
+          }
         `}
         style={{
           backfaceVisibility: 'hidden',
           transform: 'rotateY(180deg)',
         }}
-        animate={{
-          scale: card.isMatched ? [1, 1.2, 1] : 1,
-        }}
-        transition={{
-          scale: {
-            duration: 0.5,
-            ease: "easeOut"
-          }
-        }}
       >
-        <motion.span
-          className="text-6xl select-none"
-          animate={card.isMatched ? {
-            rotate: [0, 10, -10, 10, 0],
-          } : {}}
-          transition={{
-            duration: 0.5,
-            ease: "easeInOut"
-          }}
-        >
-          {card.icon}
-        </motion.span>
+        {/* Borde interno sutil */}
+        <div className={`absolute inset-3 rounded-xl border pointer-events-none transition-colors duration-300 ${
+          card.isMatched ? 'border-white/30' : 'border-cyan-300/20'
+        }`} />
 
+        {/* Contenido de la carta - Ícono con marco circular */}
+        <div className={`relative z-10 flex items-center justify-center w-32 h-32 rounded-full transition-all duration-300 ${
+          card.isMatched
+            ? 'bg-white/20 border-2 border-white/40'
+            : 'bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-300/50'
+        }`}>
+          <motion.span
+            className={`text-7xl select-none ${card.isMatched ? 'filter drop-shadow-lg' : ''}`}
+            animate={card.isMatched ? {
+              scale: [1, 1.15, 1],
+              rotate: [0, -8, 8, 0],
+            } : {}}
+            transition={{
+              duration: 0.6,
+              ease: [0.34, 1.56, 0.64, 1] // easeOutBack
+            }}
+          >
+            {card.icon}
+          </motion.span>
+        </div>
+
+        {/* Brillo superior para profundidad */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-transparent rounded-2xl pointer-events-none" />
+
+        {/* Overlay de match exitoso */}
         {card.isMatched && (
           <motion.div
-            className="absolute inset-0 rounded-xl"
+            className="absolute inset-0 rounded-2xl pointer-events-none"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="absolute inset-0 bg-white/20 rounded-xl" />
+            {/* Glow pulsante */}
             <motion.div
-              className="absolute top-2 right-2"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
+              className="absolute inset-0 bg-white/10 rounded-2xl"
+              animate={{ opacity: [0.1, 0.3, 0.1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            />
+
+            {/* Checkmark con animación mejorada */}
+            <motion.div
+              className="absolute top-4 right-4 bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-xl border-2 border-emerald-200"
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
               transition={{
-                delay: 0.3,
-                type: "spring",
+                delay: 0.2,
+                type: 'spring',
                 stiffness: 500,
-                damping: 15
+                damping: 18
               }}
             >
-              <span className="text-2xl">✓</span>
+              <span className="text-3xl text-emerald-600 font-bold">✓</span>
             </motion.div>
           </motion.div>
         )}
@@ -142,17 +169,3 @@ export const MemoCard = memo(function MemoCard({
     </motion.div>
   );
 });
-
-// Añadir estilos globales necesarios para preserve-3d
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = `
-    .preserve-3d {
-      transform-style: preserve-3d;
-    }
-    .backface-hidden {
-      backface-visibility: hidden;
-    }
-  `;
-  document.head.appendChild(style);
-}

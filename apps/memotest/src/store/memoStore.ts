@@ -1,51 +1,37 @@
 /**
- * MemoTest Game Store
- * Arquitectura profesional con patrón Redux-like
+ * MemoTest Game Store - Refactorizado
+ * Arquitectura optimizada con separación de responsabilidades
  * @module memoStore
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { memoService, type MemoCard, type PrizeCard } from '@/services/game/memoService';
 
 // ============= TYPES & INTERFACES =============
 
 /**
- * Representa una carta del juego
- */
-export interface Card {
-  id: string;
-  value: string;
-  icon?: string;
-  isFlipped: boolean;
-  isMatched: boolean;
-  position: number;
-}
-
-/**
  * Estados posibles del juego
  */
-export type GameState = 'idle' | 'waiting' | 'playing' | 'paused' | 'completed';
+export type GameState =
+  | 'waiting'      // Pantalla de espera
+  | 'shuffling'    // Mezclando cartas (animación)
+  | 'memorizing'   // Mostrando cartas para memorizar
+  | 'playing'      // Jugando activamente
+  | 'success'      // Encontró los 2 pares requeridos
+  | 'failed'       // Falló (sin movimientos o sin tiempo)
+  | 'prize';       // Fase de selección de premio
 
 /**
  * Estadísticas del juego
  */
 export interface GameStats {
-  moves: number;
-  matches: number;
+  movesUsed: number;
+  matchesFound: number;
   timeElapsed: number;
-  bestTime: number | null;
-  perfectGame: boolean;
-}
-
-/**
- * Configuración del juego
- */
-export interface GameConfig {
-  difficulty: 'easy' | 'medium' | 'hard';
-  cardPairs: number;
-  flipBackDelay: number;
-  theme: 'medical' | 'default';
+  score: number;
+  bestScore: number | null;
 }
 
 /**
@@ -54,14 +40,12 @@ export interface GameConfig {
 export interface MemoState {
   // Estado del juego
   gameState: GameState;
-  cards: Card[];
+  cards: MemoCard[];
   selectedCards: string[];
+  prizeCards: PrizeCard[];
 
   // Estadísticas
   stats: GameStats;
-
-  // Configuración
-  config: GameConfig;
 
   // UI States
   isProcessing: boolean;
@@ -75,271 +59,292 @@ export interface MemoState {
 export interface MemoActions {
   // Gestión del juego
   initGame: () => void;
-  startGame: () => void;
+  startShuffling: () => void;
+  startMemorizing: () => void;
+  startPlaying: () => void;
   resetGame: () => void;
-  pauseGame: () => void;
-  resumeGame: () => void;
+  restartGame: () => void;
 
   // Mecánica del juego
   flipCard: (cardId: string) => void;
-  checkMatch: () => void;
+  handleMatchCheck: (firstCard: MemoCard, secondCard: MemoCard) => void;
+  handleNoMatch: () => void;
 
-  // Configuración
-  setDifficulty: (difficulty: GameConfig['difficulty']) => void;
-  toggleSound: () => void;
+  // Fase de premio
+  initializePrizePhase: () => void;
+  selectPrizeCard: (cardId: string) => void;
 
   // UI
   setShowConfetti: (show: boolean) => void;
+  toggleSound: () => void;
 
   // Stats
   updateTimeElapsed: (time: number) => void;
+  checkGameEnd: (timeRemaining: number) => void;
 }
 
 export type MemoStore = MemoState & MemoActions;
 
 // ============= CONSTANTS =============
 
-const DEFAULT_CONFIG: GameConfig = {
-  difficulty: 'easy',
-  cardPairs: 4,
-  flipBackDelay: 1000,
-  theme: 'medical'
-};
-
 const INITIAL_STATS: GameStats = {
-  moves: 0,
-  matches: 0,
+  movesUsed: 0,
+  matchesFound: 0,
   timeElapsed: 0,
-  bestTime: null,
-  perfectGame: true
-};
-
-// ============= HELPERS =============
-
-/**
- * Genera las cartas para el juego
- */
-const generateCards = (pairs: number, theme: string): Card[] => {
-  // Iconos médicos para el tema de enfermería
-  const medicalIcons = [
-    '💉', '🩺', '💊', '🏥',
-    '🚑', '🩹', '🧬', '🔬',
-    '🦠', '🧪', '⚕️', '🩻'
-  ];
-
-  const defaultIcons = [
-    '🎯', '🎨', '🎭', '🎪',
-    '🎫', '🎬', '🎮', '🎯'
-  ];
-
-  const icons = theme === 'medical' ? medicalIcons : defaultIcons;
-  const selectedIcons = icons.slice(0, pairs);
-
-  // Crear pares de cartas
-  const cards: Card[] = [];
-  selectedIcons.forEach((icon, index) => {
-    // Crear dos cartas idénticas
-    for (let i = 0; i < 2; i++) {
-      cards.push({
-        id: `card-${index}-${i}`,
-        value: `value-${index}`,
-        icon,
-        isFlipped: false,
-        isMatched: false,
-        position: 0
-      });
-    }
-  });
-
-  // Mezclar las cartas usando Fisher-Yates
-  for (let i = cards.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [cards[i], cards[j]] = [cards[j], cards[i]];
-  }
-
-  // Asignar posiciones
-  return cards.map((card, index) => ({
-    ...card,
-    position: index
-  }));
+  score: 0,
+  bestScore: null,
 };
 
 // ============= STORE =============
 
 export const useMemoStore = create<MemoStore>()(
   devtools(
-    immer((set, get) => ({
-      // Estado inicial
-      gameState: 'idle',
-      cards: [],
-      selectedCards: [],
-      stats: INITIAL_STATS,
-      config: DEFAULT_CONFIG,
-      isProcessing: false,
-      showConfetti: false,
-      soundEnabled: true,
+    persist(
+      immer((set, get) => ({
+        // Estado inicial
+        gameState: 'waiting',
+        cards: [],
+        selectedCards: [],
+        prizeCards: [],
+        stats: INITIAL_STATS,
+        isProcessing: false,
+        showConfetti: false,
+        soundEnabled: true,
 
-      // ============= ACTIONS =============
+        // ============= ACTIONS =============
 
-      initGame: () => {
-        set((state) => {
-          const cards = generateCards(state.config.cardPairs, state.config.theme);
-          state.cards = cards;
-          state.gameState = 'waiting';
-          state.selectedCards = [];
-          state.stats = { ...INITIAL_STATS };
-          state.showConfetti = false;
-        });
-      },
+        initGame: () => {
+          set((state) => {
+            state.cards = memoService.generateCards('medical');
+            state.gameState = 'waiting';
+            state.selectedCards = [];
+            state.prizeCards = [];
+            state.stats = { ...INITIAL_STATS, bestScore: state.stats.bestScore };
+            state.showConfetti = false;
+            state.isProcessing = false;
+          });
+        },
 
-      startGame: () => {
-        set((state) => {
-          state.gameState = 'playing';
-        });
-      },
+        startShuffling: () => {
+          set((state) => {
+            state.gameState = 'shuffling';
+            // Re-generar y mezclar cards
+            state.cards = memoService.generateCards('medical');
+          });
+        },
 
-      resetGame: () => {
-        set((state) => {
-          state.gameState = 'idle';
-          state.cards = [];
-          state.selectedCards = [];
-          state.stats = INITIAL_STATS;
-          state.showConfetti = false;
-        });
-      },
+        startMemorizing: () => {
+          set((state) => {
+            state.gameState = 'memorizing';
+            // Voltear todas las cartas para memorización
+            state.cards.forEach(card => {
+              card.isFlipped = true;
+            });
+          });
+        },
 
-      pauseGame: () => {
-        set((state) => {
-          if (state.gameState === 'playing') {
-            state.gameState = 'paused';
-          }
-        });
-      },
-
-      resumeGame: () => {
-        set((state) => {
-          if (state.gameState === 'paused') {
+        startPlaying: () => {
+          set((state) => {
             state.gameState = 'playing';
+            // Ocultar todas las cartas
+            state.cards.forEach(card => {
+              card.isFlipped = false;
+            });
+          });
+        },
+
+        resetGame: () => {
+          set((state) => {
+            state.gameState = 'waiting';
+            state.cards = [];
+            state.selectedCards = [];
+            state.prizeCards = [];
+            state.stats = { ...INITIAL_STATS, bestScore: state.stats.bestScore };
+            state.showConfetti = false;
+            state.isProcessing = false;
+          });
+        },
+
+        restartGame: () => {
+          set((state) => {
+            // Resetear stats y estado sin pasar por 'waiting'
+            state.stats = { ...INITIAL_STATS, bestScore: state.stats.bestScore };
+            state.selectedCards = [];
+            state.prizeCards = [];
+            state.showConfetti = false;
+            state.isProcessing = false;
+
+            // Ir directamente a 'shuffling' con nuevas cartas
+            state.gameState = 'shuffling';
+            state.cards = memoService.generateCards('medical');
+          });
+        },
+
+        flipCard: (cardId: string) => {
+          const state = get();
+
+          // Validaciones
+          if (
+            state.gameState !== 'playing' ||
+            state.selectedCards.length >= 2 ||
+            state.isProcessing
+          ) {
+            return;
           }
-        });
-      },
 
-      flipCard: (cardId: string) => {
-        const state = get();
-
-        // No permitir voltear si:
-        // - El juego no está activo
-        // - Ya hay 2 cartas seleccionadas
-        // - Se está procesando una jugada
-        // - La carta ya está emparejada
-        if (
-          state.gameState !== 'playing' ||
-          state.selectedCards.length >= 2 ||
-          state.isProcessing ||
-          state.cards.find(c => c.id === cardId)?.isMatched
-        ) {
-          return;
-        }
-
-        set((state) => {
           const card = state.cards.find(c => c.id === cardId);
-          if (!card || card.isFlipped) return;
-
-          // Voltear la carta
-          card.isFlipped = true;
-          state.selectedCards.push(cardId);
-
-          // Si es la primera carta, solo incrementar movimientos
-          if (state.selectedCards.length === 1) {
-            state.stats.moves++;
+          if (!card || card.isFlipped || card.isMatched) {
+            return;
           }
 
-          // Si hay 2 cartas, verificar match
-          if (state.selectedCards.length === 2) {
-            state.isProcessing = true;
-            // La verificación se hace en checkMatch
-            setTimeout(() => get().checkMatch(), 600);
-          }
-        });
-      },
+          set((state) => {
+            const card = state.cards.find(c => c.id === cardId);
+            if (!card) return;
 
-      checkMatch: () => {
-        set((state) => {
-          const [firstId, secondId] = state.selectedCards;
-          const firstCard = state.cards.find(c => c.id === firstId);
-          const secondCard = state.cards.find(c => c.id === secondId);
+            // Voltear la carta
+            card.isFlipped = true;
+            state.selectedCards.push(cardId);
 
-          if (!firstCard || !secondCard) return;
-
-          if (firstCard.value === secondCard.value) {
-            // ¡Match encontrado!
-            firstCard.isMatched = true;
-            secondCard.isMatched = true;
-            state.stats.matches++;
-
-            // Verificar si el juego terminó
-            const allMatched = state.cards.every(c => c.isMatched);
-            if (allMatched) {
-              state.gameState = 'completed';
-              state.showConfetti = true;
-
-              // Actualizar mejor tiempo
-              if (!state.stats.bestTime || state.stats.timeElapsed < state.stats.bestTime) {
-                state.stats.bestTime = state.stats.timeElapsed;
-              }
+            // Si hay 2 cartas seleccionadas, marcar como procesando
+            if (state.selectedCards.length === 2) {
+              state.isProcessing = true;
+              // Incrementar movimientos
+              state.stats.movesUsed++;
             }
-          } else {
-            // No hay match, voltear las cartas después del delay
-            state.stats.perfectGame = false;
-            setTimeout(() => {
-              set((state) => {
-                state.cards.forEach(card => {
-                  if (state.selectedCards.includes(card.id)) {
-                    card.isFlipped = false;
-                  }
-                });
-                state.selectedCards = [];
-                state.isProcessing = false;
-              });
-            }, state.config.flipBackDelay);
-            return; // Salir temprano para no resetear isProcessing
-          }
+          });
+        },
 
-          state.selectedCards = [];
-          state.isProcessing = false;
-        });
-      },
+        handleMatchCheck: (firstCard: MemoCard, secondCard: MemoCard) => {
+          set((state) => {
+            const card1 = state.cards.find(c => c.id === firstCard.id);
+            const card2 = state.cards.find(c => c.id === secondCard.id);
 
-      setDifficulty: (difficulty) => {
-        set((state) => {
-          state.config.difficulty = difficulty;
-          state.config.cardPairs =
-            difficulty === 'easy' ? 4 :
-            difficulty === 'medium' ? 6 :
-            8;
-        });
-      },
+            if (!card1 || !card2) return;
 
-      toggleSound: () => {
-        set((state) => {
-          state.soundEnabled = !state.soundEnabled;
-        });
-      },
+            // Marcar como emparejadas
+            card1.isMatched = true;
+            card2.isMatched = true;
+            state.stats.matchesFound++;
 
-      setShowConfetti: (show) => {
-        set((state) => {
-          state.showConfetti = show;
-        });
-      },
+            // Resetear selección
+            state.selectedCards = [];
+            state.isProcessing = false;
+          });
+        },
 
-      updateTimeElapsed: (time) => {
-        set((state) => {
-          state.stats.timeElapsed = time;
-        });
+        handleNoMatch: () => {
+          set((state) => {
+            // Voltear las cartas de vuelta
+            state.cards.forEach(card => {
+              if (state.selectedCards.includes(card.id)) {
+                card.isFlipped = false;
+              }
+            });
+
+            state.selectedCards = [];
+            state.isProcessing = false;
+          });
+        },
+
+        initializePrizePhase: () => {
+          set((state) => {
+            state.gameState = 'prize';
+            state.prizeCards = memoService.generatePrizeCards();
+            state.showConfetti = true;
+          });
+        },
+
+        selectPrizeCard: (cardId: string) => {
+          set((state) => {
+            const card = state.prizeCards.find(c => c.id === cardId);
+            if (!card) return;
+
+            card.isRevealed = true;
+
+            // Si ganó premio, mostrar confetti masivo
+            if (card.hasPrize) {
+              state.showConfetti = true;
+            }
+          });
+        },
+
+        setShowConfetti: (show) => {
+          set((state) => {
+            state.showConfetti = show;
+          });
+        },
+
+        toggleSound: () => {
+          set((state) => {
+            state.soundEnabled = !state.soundEnabled;
+          });
+        },
+
+        updateTimeElapsed: (time) => {
+          set((state) => {
+            state.stats.timeElapsed = time;
+          });
+        },
+
+        checkGameEnd: (timeRemaining: number) => {
+          const state = get();
+          const config = memoService.getConfig();
+
+          const validation = memoService.validateGameState(
+            state.stats.matchesFound,
+            state.stats.movesUsed,
+            timeRemaining
+          );
+
+          set((draft) => {
+            if (validation.hasWon) {
+              // Victoria - pasar a fase de premio
+              draft.gameState = 'success';
+
+              // Calcular puntaje
+              const score = memoService.calculateScore(
+                draft.stats.movesUsed,
+                draft.stats.timeElapsed
+              );
+              draft.stats.score = score;
+
+              // Actualizar mejor puntaje
+              if (!draft.stats.bestScore || score > draft.stats.bestScore) {
+                draft.stats.bestScore = score;
+              }
+            } else if (validation.hasFailed) {
+              // Derrota
+              draft.gameState = 'failed';
+            }
+          });
+        },
+      })),
+      {
+        name: 'memo-storage',
+        partialize: (state) => ({
+          stats: {
+            ...state.stats,
+            movesUsed: 0,
+            matchesFound: 0,
+            timeElapsed: 0,
+            score: 0,
+          },
+          soundEnabled: state.soundEnabled,
+        }),
       }
-    })),
+    ),
     {
       name: 'memo-store',
     }
   )
 );
+
+// ============= SELECTORS =============
+
+export const useGameState = () => useMemoStore((state) => state.gameState);
+export const useCards = () => useMemoStore((state) => state.cards);
+export const useStats = () => useMemoStore((state) => state.stats);
+export const useIsProcessing = () => useMemoStore((state) => state.isProcessing);
+export const usePrizeCards = () => useMemoStore((state) => state.prizeCards);
+export const useShowConfetti = () => useMemoStore((state) => state.showConfetti);
+export const useSoundEnabled = () => useMemoStore((state) => state.soundEnabled);

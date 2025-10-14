@@ -251,6 +251,27 @@ textarea:focus {
 .z-tooltip { z-index: 1070; }
 .z-notification { z-index: 1080; }
 
+/* 3D Card Styles para MemoTest */
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Animación shake para cards sin match */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
 /* Print styles */
 @media print {
   body {
