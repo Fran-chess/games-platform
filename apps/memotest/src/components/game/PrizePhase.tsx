@@ -239,26 +239,35 @@ export function PrizePhase() {
                         ) : (
                           // Carta PERDEDORA con texto "Seguí participando"
                           <motion.div
-                            className="relative w-full h-full bg-gradient-to-br from-slate-100/95 via-gray-100/95 to-slate-200/95 rounded-3xl border-4 border-slate-300/70 shadow-2xl"
+                            className="relative w-full h-full bg-gradient-to-br from-cyan-100/95 via-blue-100/95 to-teal-100/95 rounded-3xl border-4 border-cyan-400/80 shadow-2xl"
                             initial={{ scale: 0.95 }}
                             animate={{ scale: 1 }}
                             transition={{ delay: 0.6, duration: 0.4, type: 'spring', stiffness: 300 }}
                           >
                             {/* Texto "Seguí participando" */}
                             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 gap-6">
-                              {/* Logo DarSalud pequeño arriba */}
+                              {/* Logo DarSalud con círculo decorativo */}
                               <motion.div
-                                className="w-24 h-24"
+                                className="relative w-48 h-48"
                                 initial={{ opacity: 0, y: -20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.8, duration: 0.4 }}
                               >
-                                <img
-                                  src="/images/8.svg"
-                                  alt="DarSalud"
-                                  className="w-full h-full object-contain select-none pointer-events-none opacity-60"
-                                  draggable={false}
-                                />
+                                {/* Círculo de fondo con gradiente */}
+                                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-200/40 via-blue-200/40 to-teal-200/40 shadow-lg" />
+
+                                {/* Borde decorativo del círculo */}
+                                <div className="absolute inset-2 rounded-full border-2 border-cyan-300/50" />
+
+                                {/* Logo */}
+                                <div className="absolute inset-0 flex items-center justify-center p-8">
+                                  <img
+                                    src="/images/8.svg"
+                                    alt="DarSalud"
+                                    className="w-full h-full object-contain select-none pointer-events-none"
+                                    draggable={false}
+                                  />
+                                </div>
                               </motion.div>
 
                               {/* Texto principal */}
@@ -268,14 +277,14 @@ export function PrizePhase() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 1, duration: 0.5, type: 'spring', stiffness: 200 }}
                               >
-                                <h3 className="text-3xl font-black text-gray-700 tracking-tight leading-tight">
+                                <h3 className="text-4xl font-black text-slate-800 tracking-tight leading-tight">
                                   Seguí<br />participando
                                 </h3>
                               </motion.div>
 
                               {/* Emoji decorativo */}
                               <motion.div
-                                className="text-4xl"
+                                className="text-5xl"
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 1.1, duration: 0.4 }}
@@ -284,8 +293,11 @@ export function PrizePhase() {
                               </motion.div>
                             </div>
 
+                            {/* Sombra interna para profundidad */}
+                            <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-transparent rounded-3xl pointer-events-none" />
+
                             {/* Borde interno */}
-                            <div className="absolute inset-3 rounded-2xl border-2 border-gray-300/50 pointer-events-none" />
+                            <div className="absolute inset-3 rounded-2xl border-2 border-cyan-300/50 pointer-events-none" />
                           </motion.div>
                         )}
                       </div>
