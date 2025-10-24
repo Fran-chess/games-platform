@@ -142,13 +142,8 @@ export function MemorizationPhase() {
 
             {/* Timer circular compacto */}
             {phase === 'memorizing' && (
-              <motion.div
-                className="relative flex items-center justify-center shrink-0"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-              >
-                <svg className="w-24 h-24 lg:w-28 lg:h-28 transform -rotate-90 relative z-10" viewBox="0 0 100 100">
+              <div className="relative flex items-center justify-center shrink-0 w-24 h-24 lg:w-28 lg:h-28">
+                <svg className="w-full h-full transform -rotate-90 relative z-10" viewBox="0 0 100 100">
                   <circle
                     cx="50"
                     cy="50"
@@ -157,7 +152,7 @@ export function MemorizationPhase() {
                     stroke="rgba(255,255,255,0.15)"
                     strokeWidth="2"
                   />
-                  <motion.circle
+                  <circle
                     cx="50"
                     cy="50"
                     r="45"
@@ -165,13 +160,7 @@ export function MemorizationPhase() {
                     stroke="rgb(103, 232, 249)"
                     strokeWidth="5"
                     strokeLinecap="round"
-                    initial={{ pathLength: 1 }}
-                    animate={{
-                      pathLength: timeLeft / config.memorizationTime,
-                    }}
-                    transition={{ duration: 1, ease: 'linear' }}
                     style={{
-                      filter: 'drop-shadow(0 0 6px rgba(103, 232, 249, 0.6))',
                       strokeDasharray: '283',
                       strokeDashoffset: 0,
                     }}
@@ -179,18 +168,14 @@ export function MemorizationPhase() {
                 </svg>
 
                 {/* Número central compacto */}
-                <motion.div
-                  className="absolute inset-0 flex items-center justify-center"
-                  animate={timeLeft <= 3 ? { scale: [1, 1.08, 1] } : {}}
-                  transition={{ duration: 0.4, repeat: timeLeft <= 3 ? Infinity : 0 }}
-                >
+                <div className="absolute inset-0 flex items-center justify-center">
                   <span className={`text-3xl lg:text-4xl font-black tracking-tight ${
                     timeLeft <= 3 ? 'text-red-400' : 'text-cyan-300'
                   }`}>
                     {timeLeft}
                   </span>
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             )}
           </div>
         </div>
