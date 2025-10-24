@@ -221,32 +221,25 @@ export function PlayingPhase() {
       {/* Grid de cartas - NO depende del timer */}
       <motion.div
         className="max-w-[92vw] mx-auto flex-1 flex items-center justify-center w-full"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, delay: 0.2, ease: 'easeOut' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
       >
         <div
           className="grid grid-cols-6 grid-rows-2 auto-rows-fr gap-6 w-full place-items-center"
           style={{ contain: 'layout paint', perspective: '1200px' }}
         >
-          {cardOrder.map((cardId, index) => (
-            <motion.div
+          {cardOrder.map((cardId) => (
+            <div
               key={cardId}
               className="relative w-full aspect-[3/4]"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{
-                duration: 0.3,
-                delay: index * 0.03,
-                ease: 'easeOut'
-              }}
             >
               <MemoCard
                 cardId={cardId}
                 onClick={handleCardClick}
                 disabled={isProcessing || movesLeft === 0}
               />
-            </motion.div>
+            </div>
           ))}
         </div>
       </motion.div>
