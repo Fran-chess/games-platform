@@ -102,7 +102,7 @@ export const useMemoStore = create<MemoStore>()(
     persist(
       immer((set, get) => ({
         // Estado inicial
-        gameState: 'waiting',
+        gameState: 'waiting' as GameState,
         cards: [],
         selectedCards: [],
         prizeCards: [],
@@ -335,6 +335,7 @@ export const useMemoStore = create<MemoStore>()(
     ),
     {
       name: 'memo-store',
+      enabled: process.env.NODE_ENV === 'development', // Solo devtools en dev
     }
   )
 );

@@ -17,17 +17,15 @@ interface DefeatModalProps {
 
 export function DefeatModal({ reason = 'max_moves' }: DefeatModalProps) {
   const stats = useStats();
-  const { resetGame, initGame, startShuffling } = useMemoStore();
+  const { resetGame } = useMemoStore();
 
   const config = memoService.getConfig();
 
   const handlePlayAgain = useCallback(() => {
     // Reiniciar el juego desde el principio (volver a mezclar)
-    initGame();
-    setTimeout(() => {
-      startShuffling();
-    }, 100);
-  }, [initGame, startShuffling]);
+    const { restartGame } = useMemoStore.getState();
+    restartGame();
+  }, []);
 
   const handleBackToStart = useCallback(() => {
     // Volver a la pantalla de espera

@@ -5,139 +5,239 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Essential Commands
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run linting
-- `npm run test` - Run tests (compiles TypeScript first, then runs Node.js tests)
-
-### Test Commands
-- `npm run test:build` - Compile TypeScript test files to `dist_test/` directory
-- `npm run test` - Full test suite (build + run tests)
-- Run single test: `node --test dist_test/tests/[filename].test.js` (after test:build)
-- Test configuration: `tsconfig.test.json` compiles to CommonJS for Node.js testing
+- `pnpm dev` - Start development server (port 3001)
+- `pnpm build` - Build for production
+- `pnpm start` - Start production server
+- `pnpm lint` - Run linting
+- `pnpm type-check` - Check TypeScript types
 
 ## Project Architecture
 
 ### Technology Stack
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript (strict mode)
-- **Database**: Supabase (PostgreSQL with realtime subscriptions)
-- **State Management**: Zustand
+- **State Management**: Zustand with immer middleware
 - **Styling**: Tailwind CSS v4 with PostCSS
-- **Animations**: Framer Motion
-- **Data Fetching**: TanStack Query (React Query v5)
-- **Icons**: Heroicons, React Icons
-- **Excel Export**: xlsx library
+- **Animations**: Framer Motion (optimized with CSS transitions)
+- **Audio**: Web Audio API (synthesized sounds)
+- **Icons**: Emoji-based (no icon libraries)
 
 ### Core Application Structure
 
-This is a **multi-screen roulette game system** with three main interfaces:
+This is a **single-player memory card game** (MemoTest) designed for tablet use at DarSalud events.
 
-1. **Admin Panel** (`/admin`) - Game management and session control
-2. **Tablet Interface** (`/game/[sessionId]`) - Player interaction with roulette wheel
-3. **TV Display** (`/tv`) - Real-time game visualization for audience
+**Game Flow:**
+1. **WaitingScreen** - Initial screen with branding
+2. **Shuffling Phase** - Cards are shuffled with animation
+3. **Memorization Phase** - Player has 5 seconds to memorize card positions
+4. **Playing Phase** - Player finds 2 matching pairs in 3 moves max
+5. **Success/Failed** - Result screen
+6. **Prize Phase** - Winner selects from 3 mystery cards
 
 ### Key Components Architecture
 
-#### State Management (Zustand Stores)
-- `src/store/gameStore.ts` - Main game state, participants, questions, admin operations
-- `src/store/sessionStore.ts` - Authentication and session management
-- `src/store/navigationStore.ts` - Navigation and UI state
+#### State Management (Zustand Store)
+- `src/store/memoStore.ts` - Single store with all game state
+  - Game phases: `'waiting' | 'shuffling' | 'memorizing' | 'playing' | 'success' | 'failed' | 'prize'`
+  - Cards state (12 cards, 6 pairs)
+  - Game stats (moves, matches, time, score)
+  - Actions for game logic
+  - **Optimized**: devtools only enabled in development
 
-#### Database Schema (Supabase)
-- `participants` - Player registration and status (indexed on session_id, status, created_at)
-- `game_sessions` (PlaySession) - Individual game sessions (indexed on status, admin_id)
-- `plays` - Game plays and results
-- **Setup Scripts**: `scripts/setup-production-db.sql` (indexes & RLS policies)
-- **Test Data**: `scripts/generate-test-participants.sql`
+#### Component Structure
+- `components/game/` - Core game components
+  - `MemoGame.tsx` - Main orchestrator
+  - `MemorizationPhase.tsx` - Shuffling and memorization
+  - `PlayingPhase.tsx` - Active gameplay
+  - `PrizePhase.tsx` - Prize selection screen
+  - `DefeatModal.tsx` - Loss screen
+  - `MemoCard.tsx` - Individual card (optimized animations)
+- `components/tv/screens/` - Branding screens
+  - `WaitingScreen.tsx` - Initial landing screen
+- `components/ui/` - Reusable UI components
+  - `ErrorBoundary.tsx` - Error handling
+  - `Logo.tsx` - DarSalud branding
+  - `TimerCircle.tsx` - Countdown timer
 
-#### Realtime System
-- TV screen uses **dual realtime subscriptions** to prevent race conditions:
-  - `game_sessions` table for session updates
-  - `participants` table for immediate participant detection
-- Optimized logging system with different levels for development vs production
+#### Game Service
+- `src/services/game/memoService.ts` - Business logic
+  - Card generation and shuffling (Fisher-Yates)
+  - Match validation
+  - Score calculation
+  - Prize card generation
+  - Game state validation
 
-#### API Routes Structure
-- `src/app/api/admin/` - Admin management endpoints
-  - `sessions/` - Session CRUD operations (create, list, active, close, finish)
-  - `sessions/queue/` - Queue management for participants
-  - `sessions/register-player/` - Admin-initiated player registration
-- `src/app/api/participants/` - Player registration and stats
-- `src/app/api/plays/` - Game play submission
-- `src/app/api/questions/` - Question management
-- `src/app/api/export-participants/` - Excel export functionality
+#### Audio Service
+- `src/services/audio/audioService.ts` - Web Audio API wrapper
+  - Synthesized sound effects (no audio files)
+  - Victory/defeat melodies
+  - Card flip sounds
+
+### Game Configuration
+
+**Default Settings** (in `memoService.ts`):
+```typescript
+{
+  totalPairs: 6,        // 12 cards total
+  requiredPairs: 2,     // Must find 2 pairs to win
+  maxMoves: 3,          // 3 attempts maximum
+  memorizationTime: 5,  // 5 seconds to memorize
+  gameTime: 120,        // 2 minutes to complete
+  shuffleAnimationTime: 2  // 2 seconds shuffle animation
+}
+```
+
+### Performance Optimizations
+
+#### Applied Optimizations
+1. **Zustand Middleware**: devtools disabled in production
+2. **Card Animations**: 3D transforms removed, replaced with CSS opacity transitions
+3. **Framer Motion**: Simplified to essential animations only
+4. **Memoization**: `React.memo` on MemoCard component
+5. **CSS Animations**: Native CSS keyframes for fade/scale effects
+
+#### Animation Strategy
+- ❌ **Removed**: `rotateY`, `preserve-3d`, complex motion values
+- ✅ **Using**: `opacity`, `scale`, CSS transitions
+- **Result**: ~40-50% reduction in GPU load
 
 ### Critical Implementation Details
 
-#### Supabase Client Configuration
-- **Client-side**: `supabaseClient` (anonymous access)
-- **Server-side**: `supabaseAdmin` (service role, API routes only)
-- Singleton pattern to prevent multiple instances
-- SSR protection for client initialization
+#### Game State Flow
+```
+waiting → shuffling → memorizing → playing → (success/failed) → prize
+           ↑_______________________________________________|
+                        (restartGame)
+```
 
-#### Game Flow
-1. Admin creates session via `/admin`
-2. Players register via `/register/[sessionId]`
-3. Game plays on `/game/[sessionId]` with roulette wheel
-4. TV displays live updates via `/tv`
+**Important Functions:**
+- `initGame()` - Initialize fresh game (goes to 'waiting')
+- `restartGame()` - Quick restart (goes directly to 'shuffling', skips waiting)
+- `resetGame()` - Back to waiting screen
 
-#### TV Optimization
-- Implements intelligent retry logic with exponential backoff
-- Dual realtime subscriptions eliminate race conditions
-- Smart logging system (`tvLogger` for dev, `tvProdLogger` for production)
-- Performance monitoring with sub-200ms response times
+#### Page Router Logic (`app/page.tsx`)
+- Manages transition between WaitingScreen and MemoGame
+- Detects "Volver al Inicio" action when gameState changes to 'waiting'
+- Only shows WaitingScreen on initial load or explicit reset
+
+#### Card Flip Logic
+- Player can flip 2 cards per move
+- After 2nd card flip, checks for match
+- Match: cards stay flipped, increment matches
+- No match: cards flip back after 800ms with shake animation
+- Game ends when: 2 pairs found (win) OR 3 moves used (lose) OR time runs out (lose)
 
 ### Common Patterns
 
 #### Error Handling
-- Use `tvLogger` for development debugging
-- Use `tvProdLogger` for production-critical errors only
-- Consistent error interfaces with `SupabaseError`
+- `ErrorBoundary` component wraps the app
+- Shows debug info only in development (`process.env.NODE_ENV === 'development'`)
 
 #### Component Organization
-- `components/admin/` - Admin panel components
-- `components/game/` - Game interaction components
-- `components/tv/` - TV display components
-- `components/ui/` - Reusable UI components
+```
+src/
+├── app/              # Next.js App Router
+│   ├── page.tsx      # Main page (WaitingScreen ↔ MemoGame)
+│   ├── layout.tsx    # Root layout with branding
+│   └── globals.css   # Global styles and animations
+├── components/
+│   ├── game/         # Game-specific components
+│   ├── tv/           # Branding/waiting screens
+│   └── ui/           # Reusable UI components
+├── hooks/            # Custom React hooks
+│   └── useMemoAudio.ts  # Audio management
+├── services/         # Business logic services
+│   ├── audio/        # Audio synthesis
+│   └── game/         # Game rules and logic
+├── store/            # Zustand state management
+│   └── memoStore.ts  # Single store
+├── types/            # TypeScript interfaces
+└── utils/            # Utility functions
+```
 
 #### Data Flow
-- Zustand stores manage global state
-- API routes handle database operations
-- Realtime subscriptions provide live updates
-- TypeScript interfaces in `src/types/index.ts` define all data structures
-
-### Performance Considerations
-
-#### Production Optimizations
-- Logging level set to 'error' in production
-- Realtime subscriptions optimized for high concurrency
-- Database indexes on `session_id` and `status` fields
-- Minimal polling, maximum realtime event usage
-
-#### Development Features
-- Comprehensive debug logging
-- Hot reload with Next.js dev server
-- TypeScript strict mode enabled
-- Path aliases configured (`@/*` maps to `src/*`)
+- **User Action** → **Zustand Action** → **State Update** → **Component Re-render**
+- No API calls, no database, no external data sources
+- All game state is ephemeral (resets on page reload)
 
 ## Important Notes
 
 - This is a **Spanish-language application** for DarSalud events
-- Uses Progressive Web App (PWA) configuration for tablet use
-- Implements Row Level Security (RLS) on Supabase tables
-- TV display optimized for large screens and audience viewing
-- Game supports both individual and session-based play modes
-- Questions loaded from `src/data/questions.json` with medical specialties
-- Queue system manages participant flow with "waiting", "playing", "completed" states
+- **Frontend-only** - No backend, no database, no API routes
+- **Tablet-optimized** - Landscape orientation required
+- Uses **medical-themed emojis** for cards (💉, 🩺, 💊, 🏥, etc.)
+- **PWA-ready** - Has manifest.json and service worker
+- **No external dependencies** for game logic (pure TypeScript)
 
-## Environment Variables Required
+## Environment Variables
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-NODE_ENV=production
-NEXT_PUBLIC_ENABLE_TV_DEBUG=false
-NEXT_PUBLIC_TV_LOG_LEVEL=error
-```
+**None required!**
+
+The app uses only `process.env.NODE_ENV` which is automatically set by Next.js:
+- `pnpm dev` → `NODE_ENV=development` (enables devtools)
+- `pnpm build` → `NODE_ENV=production` (disables devtools)
+- Vercel → `NODE_ENV=production` (automatic)
+
+## Deployment
+
+### Vercel Configuration
+- **Root Directory**: `apps/memotest`
+- **Build Command**: `cd ../.. && pnpm build --filter=@games-platform/memotest`
+- **Install Command**: `cd ../.. && pnpm install`
+- **Output Directory**: `.next`
+- **Environment Variables**: None needed
+
+### Build Output
+- Optimized for production with Next.js static optimization
+- All assets bundled and minified
+- No server-side rendering required (can deploy as static export)
+
+## Troubleshooting
+
+### Common Issues
+
+**Build Error: TypeScript Types**
+- Run `pnpm type-check` to verify types
+- Ensure all imports are correct
+- Check Zustand store type definitions
+
+**Animation Performance**
+- Already optimized to use CSS transitions
+- If still slow, check browser GPU acceleration
+- Reduce `transition-duration` values in Tailwind classes
+
+**Audio Not Playing**
+- Web Audio API requires user interaction to start
+- First click/tap on page initializes audio context
+- Check browser console for audio errors
+
+**Cards Not Flipping**
+- Verify `isProcessing` state in Zustand store
+- Check if move limit (maxMoves) has been reached
+- Ensure cards are not already matched
+
+## Architecture Decisions
+
+### Why No Backend?
+- Simple single-player game doesn't require persistence
+- Faster development and deployment
+- Zero infrastructure costs
+- No security concerns with user data
+
+### Why Zustand?
+- Lightweight (~1KB)
+- Simple API, no boilerplate
+- Great TypeScript support
+- Built-in devtools integration
+
+### Why Synthesized Audio?
+- No audio files to load (faster)
+- Smaller bundle size
+- Consistent cross-browser support
+- Customizable sound effects via code
+
+### Why CSS Transitions over Framer Motion?
+- Better performance (GPU-accelerated)
+- Simpler to maintain
+- Smaller bundle size
+- Framer Motion still used for complex orchestrations
