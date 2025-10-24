@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { memoService, type MemoCard, type PrizeCard } from '@/services/game/memoService';
+import { clockService } from '@/services/game/clockService';
 
 // ============= TYPES & INTERFACES =============
 
@@ -48,10 +49,29 @@ export interface MemoState {
   // Estadísticas
   stats: GameStats;
 
+  // Timer centralizado
+  timeLeft: number;
+
   // UI States
   isProcessing: boolean;
   showConfetti: boolean;
   soundEnabled: boolean;
+
+  // Callbacks de audio (inyectados desde componentes)
+  audioCallbacks: {
+    onMatch?: () => void;
+    onError?: () => void;
+    onVictory?: () => void;
+    onDefeat?: () => void;
+    onTick?: () => void;
+    onPhaseStart?: () => void;
+  };
+
+  // Phase sub-state (para MemorizationPhase state machine)
+  memorizationPhase: 'shuffling' | 'memorizing' | 'hiding' | null;
+
+  // Timers internos del store (para limpiar correctamente)
+  phaseTransitionTimers: Set<NodeJS.Timeout>;
 }
 
 /**
@@ -80,9 +100,24 @@ export interface MemoActions {
   setShowConfetti: (show: boolean) => void;
   toggleSound: () => void;
 
-  // Stats
+  // Stats & Timer
   updateTimeElapsed: (time: number) => void;
+  setTimeLeft: (time: number) => void;
   checkGameEnd: (timeRemaining: number) => void;
+
+  // Clock control
+  startClock: (seconds: number) => void;
+  stopClock: () => void;
+
+  // Audio callbacks (inyección)
+  setAudioCallbacks: (callbacks: MemoState['audioCallbacks']) => void;
+
+  // State machine actions
+  clearPhaseTimers: () => void;
+  transitionToMemorizing: () => void;
+  transitionToHiding: () => void;
+  transitionToPlaying: () => void;
+  transitionToPrize: () => void;
 }
 
 export type MemoStore = MemoState & MemoActions;
@@ -128,9 +163,13 @@ export const useMemoStore = create<MemoStore>()(
         prizeCards: [],
         shakeCards: new Set<string>(),
         stats: INITIAL_STATS,
+        timeLeft: 0,
         isProcessing: false,
         showConfetti: false,
         soundEnabled: true,
+        audioCallbacks: {},
+        memorizationPhase: null,
+        phaseTransitionTimers: new Set<NodeJS.Timeout>(),
 
         // ============= ACTIONS =============
 
@@ -255,13 +294,55 @@ export const useMemoStore = create<MemoStore>()(
             selectedCards: newSelectedCards,
           };
 
-          // Si hay 2 cartas seleccionadas, marcar como procesando
+          // Si hay 2 cartas seleccionadas, procesar match automáticamente
           if (newSelectedCards.length === 2) {
             updates.isProcessing = true;
+            const newMovesUsed = state.stats.movesUsed + 1;
             updates.stats = {
               ...state.stats,
-              movesUsed: state.stats.movesUsed + 1
+              movesUsed: newMovesUsed
             };
+
+            set(updates);
+
+            // Procesar match check después de 600ms (animación de flip)
+            setTimeout(() => {
+              const currentState = get();
+              const [firstId, secondId] = newSelectedCards;
+              const card1 = currentState.cardsById[firstId];
+              const card2 = currentState.cardsById[secondId];
+
+              if (!card1 || !card2) return;
+
+              const isMatch = memoService.checkMatch(card1, card2);
+
+              if (isMatch) {
+                currentState.audioCallbacks.onMatch?.();
+                get().handleMatchCheck(firstId, secondId);
+
+                // Check victoria después de actualizar match
+                setTimeout(() => {
+                  const config = memoService.getConfig();
+                  const latestState = get();
+                  if (latestState.stats.matchesFound >= config.requiredPairs) {
+                    get().checkGameEnd(latestState.timeLeft);
+                  }
+                }, 100);
+              } else {
+                currentState.audioCallbacks.onError?.();
+                get().handleNoMatch();
+
+                // Check derrota por movimientos
+                const config = memoService.getConfig();
+                if (newMovesUsed >= config.maxMoves && currentState.stats.matchesFound < config.requiredPairs) {
+                  setTimeout(() => {
+                    get().checkGameEnd(get().timeLeft);
+                  }, 1000);
+                }
+              }
+            }, 600);
+
+            return;
           }
 
           set(updates);
@@ -367,6 +448,7 @@ export const useMemoStore = create<MemoStore>()(
           );
 
           if (validation.hasWon) {
+            clockService.stop();
             const score = memoService.calculateScore(
               state.stats.movesUsed,
               state.stats.timeElapsed
@@ -382,20 +464,128 @@ export const useMemoStore = create<MemoStore>()(
                   : state.stats.bestScore
               }
             });
+
+            // Trigger audio callback
+            state.audioCallbacks.onVictory?.();
           } else if (validation.hasFailed) {
+            clockService.stop();
             set({ gameState: 'failed' });
+
+            // Trigger audio callback
+            state.audioCallbacks.onDefeat?.();
           }
+        },
+
+        // Clock control
+        startClock: (seconds: number) => {
+          clockService.start(seconds, (timeLeft) => {
+            const state = get();
+            set({ timeLeft });
+
+            // Tick audio en últimos 10 segundos
+            if (timeLeft <= 10 && timeLeft > 0) {
+              state.audioCallbacks.onTick?.();
+            }
+
+            // Check cuando llega a 0
+            if (timeLeft === 0) {
+              // Si estamos en memorizing, transicionar a hiding
+              if (state.memorizationPhase === 'memorizing') {
+                get().transitionToHiding();
+              } else {
+                // Si estamos en playing, check game end
+                get().checkGameEnd(0);
+              }
+            }
+          });
+        },
+
+        stopClock: () => {
+          clockService.stop();
+        },
+
+        setTimeLeft: (time: number) => {
+          set({ timeLeft: time });
+        },
+
+        setAudioCallbacks: (callbacks: MemoState['audioCallbacks']) => {
+          set({ audioCallbacks: callbacks });
+        },
+
+        // ============= STATE MACHINE =============
+
+        clearPhaseTimers: () => {
+          const state = get();
+          state.phaseTransitionTimers.forEach(timer => clearTimeout(timer));
+          set({ phaseTransitionTimers: new Set() });
+        },
+
+        transitionToMemorizing: () => {
+          get().clearPhaseTimers();
+          const config = memoService.getConfig();
+
+          // Transición shuffling → memorizing después de shuffleAnimationTime
+          const timer = setTimeout(() => {
+            get().startMemorizing();
+            get().startClock(config.memorizationTime);
+            set({ memorizationPhase: 'memorizing' });
+
+            // Transición automática a hiding cuando timeLeft === 0
+            // (manejado por el clock callback)
+          }, config.shuffleAnimationTime * 1000);
+
+          const timers = get().phaseTransitionTimers;
+          timers.add(timer);
+          set({ memorizationPhase: 'shuffling', phaseTransitionTimers: timers });
+        },
+
+        transitionToHiding: () => {
+          get().clearPhaseTimers();
+          get().stopClock();
+
+          // Transición memorizing → hiding → playing
+          const timer = setTimeout(() => {
+            get().transitionToPlaying();
+          }, 1000);
+
+          const timers = get().phaseTransitionTimers;
+          timers.add(timer);
+          set({ memorizationPhase: 'hiding', phaseTransitionTimers: timers });
+        },
+
+        transitionToPlaying: () => {
+          get().clearPhaseTimers();
+          get().startPlaying();
+          set({ memorizationPhase: null });
+        },
+
+        transitionToPrize: () => {
+          get().clearPhaseTimers();
+
+          // Transición success → prize después de 1.5s
+          const timer = setTimeout(() => {
+            get().initializePrizePhase();
+          }, 1500);
+
+          const timers = get().phaseTransitionTimers;
+          timers.add(timer);
+          set({ phaseTransitionTimers: timers });
         },
       }),
       {
         name: 'memo-storage',
         partialize: (state) => ({
-          // Solo persistir mejores puntajes y configuración
+          // Solo persistir mejores puntajes y configuración (no timeLeft, no selectedCards, no isProcessing)
           stats: {
             ...INITIAL_STATS,
             bestScore: state.stats.bestScore,
           },
           soundEnabled: state.soundEnabled,
+        }),
+        // Throttle: limitar writes a localStorage a 1 cada 2 segundos
+        merge: (persistedState: any, currentState) => ({
+          ...currentState,
+          ...persistedState,
         }),
       }
     ),
@@ -412,6 +602,7 @@ export const useMemoStore = create<MemoStore>()(
  * Selectores base
  */
 export const useGameState = () => useMemoStore((state) => state.gameState);
+export const useMemorizationPhase = () => useMemoStore((state) => state.memorizationPhase);
 export const useIsProcessing = () => useMemoStore((state) => state.isProcessing);
 export const useSoundEnabled = () => useMemoStore((state) => state.soundEnabled);
 export const useShowConfetti = () => useMemoStore((state) => state.showConfetti);
@@ -419,6 +610,7 @@ export const useShowConfetti = () => useMemoStore((state) => state.showConfetti)
 /**
  * Selectores primitivos para el HUD (sin crear objetos nuevos)
  */
+export const useTimeLeft = () => useMemoStore((state) => state.timeLeft);
 export const useMovesUsed = () => useMemoStore((state) => state.stats.movesUsed);
 export const useMatchesFound = () => useMemoStore((state) => state.stats.matchesFound);
 

@@ -6,10 +6,10 @@
 
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { MemoCard } from './MemoCard';
-import { useCardOrder, useMovesUsed, useMatchesFound, useIsProcessing, useMemoStore } from '@/store/memoStore';
+import { CardsGrid } from './CardsGrid';
+import { useMovesUsed, useMatchesFound, useTimeLeft, useMemoStore } from '@/store/memoStore';
 import { memoService } from '@/services/game/memoService';
 import { useMemoAudio } from '@/hooks/useMemoAudio';
 import { useDeviceCapabilities } from '@/hooks/useDeviceCapabilities';
@@ -108,140 +108,44 @@ function GameHUD({ timeLeft }: { timeLeft: number }) {
 }
 
 export function PlayingPhase() {
-  const cardOrder = useCardOrder();
-  const movesUsed = useMovesUsed();
-  const matchesFound = useMatchesFound();
-  const isProcessing = useIsProcessing();
-  const { flipCard, handleMatchCheck, handleNoMatch, checkGameEnd } = useMemoStore();
+  const timeLeft = useTimeLeft(); // Del store, actualizado por Clock a 1 Hz
+  const { flipCard, startClock, stopClock, setAudioCallbacks } = useMemoStore();
 
-  const [timeLeft, setTimeLeft] = useState(120);
-  const timeRef = useRef(120);
-  const lastTickRef = useRef(Date.now());
-
-  const config = useMemo(() => memoService.getConfig(), []);
   const { playFlip, playMatch, playError, playTick } = useMemoAudio();
 
-  // Memoizar movesLeft para evitar cálculos en cada render
-  const movesLeft = useMemo(() => config.maxMoves - movesUsed, [config.maxMoves, movesUsed]);
-
-  // Timer con rAF - Actualizar HUD cada ~300ms (no cada frame)
+  // Inyectar callbacks de audio al montar, iniciar clock
   useEffect(() => {
-    let rafId: number;
-    let lastHudUpdate = Date.now();
+    setAudioCallbacks({
+      onMatch: playMatch,
+      onError: playError,
+      onTick: playTick,
+    });
 
-    const tick = () => {
-      const now = Date.now();
-      const delta = now - lastTickRef.current;
-      const hudDelta = now - lastHudUpdate;
+    startClock(120);
 
-      // Decrementar tiempo cada segundo
-      if (delta >= 1000) {
-        lastTickRef.current = now;
-        timeRef.current = Math.max(0, timeRef.current - 1);
-
-        // Solo actualizar HUD cada ~300ms (percepción usuario)
-        if (hudDelta >= 300 || timeRef.current === 0) {
-          setTimeLeft(timeRef.current);
-          lastHudUpdate = now;
-        }
-
-        if (timeRef.current === 0) {
-          checkGameEnd(0);
-          return;
-        }
-      }
-
-      rafId = requestAnimationFrame(tick);
+    return () => {
+      stopClock();
     };
-
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [checkGameEnd]);
-
-  // Match check (sin observar array completo de cards)
-  useEffect(() => {
-    if (!isProcessing) return;
-
-    const state = useMemoStore.getState();
-    const flippedCards = state.cardOrder
-      .map(id => state.cardsById[id])
-      .filter(c => c && c.isFlipped && !c.isMatched);
-
-    if (flippedCards.length === 2) {
-      const [first, second] = flippedCards;
-
-      const timer = setTimeout(() => {
-        const match = memoService.checkMatch(first, second);
-
-        if (match) {
-          playMatch();
-          handleMatchCheck(first.id, second.id);
-
-          setTimeout(() => {
-            const currentState = useMemoStore.getState();
-            if (currentState.stats.matchesFound >= config.requiredPairs) {
-              checkGameEnd(timeRef.current);
-            }
-          }, 100);
-        } else {
-          playError();
-          // Shake manejado por estado (clearShake en onAnimationComplete de MemoCard)
-          handleNoMatch();
-        }
-      }, 600);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isProcessing]);
-
-  // Check derrota por movimientos
-  useEffect(() => {
-    if (movesUsed >= config.maxMoves && matchesFound < config.requiredPairs && !isProcessing) {
-      checkGameEnd(timeRef.current);
-    }
-  }, [movesUsed, matchesFound, config.maxMoves, config.requiredPairs, isProcessing, checkGameEnd]);
+  }, [startClock, stopClock, setAudioCallbacks, playMatch, playError, playTick]);
 
   const handleCardClick = useCallback((cardId: string) => {
     playFlip();
     flipCard(cardId);
   }, [flipCard, playFlip]);
 
-  // Tick en los últimos 10 segundos
-  useEffect(() => {
-    if (timeLeft <= 10 && timeLeft > 0) {
-      playTick();
-    }
-  }, [timeLeft, playTick]);
-
   return (
     <div className="h-screen p-8 lg:p-12 flex flex-col">
       {/* HUD aislado */}
       <GameHUD timeLeft={timeLeft} />
 
-      {/* Grid de cartas - NO depende del timer */}
+      {/* Grid de cartas - Completamente aislado, NO observa timer ni stats */}
       <motion.div
         className="max-w-[92vw] mx-auto flex-1 flex items-center justify-center w-full"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
       >
-        <div
-          className="grid grid-cols-6 grid-rows-2 auto-rows-fr gap-6 w-full place-items-center"
-          style={{ contain: 'layout paint', perspective: '1200px' }}
-        >
-          {cardOrder.map((cardId) => (
-            <div
-              key={cardId}
-              className="relative w-full aspect-[3/4]"
-            >
-              <MemoCard
-                cardId={cardId}
-                onClick={handleCardClick}
-                disabled={isProcessing || movesLeft === 0}
-              />
-            </div>
-          ))}
-        </div>
+        <CardsGrid onCardClick={handleCardClick} />
       </motion.div>
     </div>
   );

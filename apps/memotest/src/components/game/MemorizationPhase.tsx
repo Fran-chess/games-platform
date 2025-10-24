@@ -6,75 +6,24 @@
 
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { MemoCard } from './MemoCard';
-import { useCardOrder, useMemoStore } from '@/store/memoStore';
+import { useCardOrder, useTimeLeft, useMemorizationPhase, useMemoStore } from '@/store/memoStore';
 import { memoService } from '@/services/game/memoService';
 
 export function MemorizationPhase() {
   const cardOrder = useCardOrder();
-  const { startMemorizing, startPlaying } = useMemoStore();
-  const [phase, setPhase] = useState<'shuffling' | 'memorizing' | 'hiding'>('shuffling');
-  const [timeLeft, setTimeLeft] = useState(0);
-  const timeRef = useRef(0);
-  const lastTickRef = useRef(Date.now());
+  const timeLeft = useTimeLeft(); // Del store, actualizado por Clock a 1 Hz
+  const phase = useMemorizationPhase(); // Del store state machine
+  const { transitionToMemorizing } = useMemoStore();
 
   const config = memoService.getConfig();
 
-  // Fase de shuffling
+  // Iniciar state machine al montar
   useEffect(() => {
-    if (phase === 'shuffling') {
-      const timer = setTimeout(() => {
-        setPhase('memorizing');
-        startMemorizing();
-        timeRef.current = config.memorizationTime;
-        setTimeLeft(config.memorizationTime);
-        lastTickRef.current = Date.now();
-      }, config.shuffleAnimationTime * 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [phase, config, startMemorizing]);
-
-  // Timer con rAF
-  useEffect(() => {
-    if (phase !== 'memorizing' || timeLeft === 0) return;
-
-    let rafId: number;
-
-    const tick = () => {
-      const now = Date.now();
-      const delta = now - lastTickRef.current;
-
-      if (delta >= 1000) {
-        lastTickRef.current = now;
-        timeRef.current = Math.max(0, timeRef.current - 1);
-        setTimeLeft(timeRef.current);
-
-        if (timeRef.current === 0) {
-          setPhase('hiding');
-          return;
-        }
-      }
-
-      rafId = requestAnimationFrame(tick);
-    };
-
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [phase, timeLeft]);
-
-  // Fase de hiding
-  useEffect(() => {
-    if (phase === 'hiding') {
-      const timer = setTimeout(() => {
-        startPlaying();
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [phase, startPlaying]);
+    transitionToMemorizing();
+  }, [transitionToMemorizing]);
 
   const handleDummyClick = useCallback(() => {
     // No hacer nada durante memorización
@@ -83,12 +32,7 @@ export function MemorizationPhase() {
   return (
     <div className="h-screen p-8 lg:p-12 flex flex-col">
       {/* Header HUD compacto */}
-      <motion.div
-        className="max-w-[92vw] mx-auto mb-3 w-full"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-      >
+      <div className="max-w-[92vw] mx-auto mb-3 w-full">
         <div className="relative bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg p-4 md:p-5 border border-cyan-400/30 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent pointer-events-none" />
 
@@ -96,47 +40,32 @@ export function MemorizationPhase() {
             {/* Instrucciones compactas */}
             <div className="text-left flex-1">
               {phase === 'shuffling' && (
-                <motion.div
-                  key="shuffling"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
+                <div key="shuffling">
                   <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-tight">Mezclando cartas...</h2>
                   <p className="text-sm lg:text-base text-white/80 mt-1 font-medium">Preparando el juego</p>
-                </motion.div>
+                </div>
               )}
 
               {phase === 'memorizing' && (
-                <motion.div
-                  key="memorizing"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
+                <div key="memorizing">
                   <h2 className="text-2xl lg:text-3xl font-extrabold text-cyan-300 tracking-tight leading-tight">
                     ¡Memoriza las cartas!
                   </h2>
                   <p className="text-sm lg:text-base text-white/85 mt-1 font-medium">
                     Recuerda la posición de cada símbolo
                   </p>
-                </motion.div>
+                </div>
               )}
 
               {phase === 'hiding' && (
-                <motion.div
-                  key="hiding"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
+                <div key="hiding">
                   <h2 className="text-2xl lg:text-3xl font-extrabold text-emerald-400 tracking-tight leading-tight">
                     ¡A jugar!
                   </h2>
                   <p className="text-sm lg:text-base text-white/85 mt-1 font-medium">
                     Encuentra los 2 pares
                   </p>
-                </motion.div>
+                </div>
               )}
             </div>
 
@@ -179,7 +108,7 @@ export function MemorizationPhase() {
             )}
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Grid de cartas optimizado */}
       <motion.div

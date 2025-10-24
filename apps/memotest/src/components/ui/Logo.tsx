@@ -28,83 +28,95 @@ const Logo = ({
   const [dimensions, setDimensions] = useState({ width: 200, height: 60 });
 
   useEffect(() => {
-    const updateSize = () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      
+    // Función de cálculo de dimensiones (pura, sin side effects)
+    const calculateDimensions = (width: number, height: number) => {
       if (size !== "auto") {
-        // Tamaños base que se ajustan según la variante - OPTIMIZADOS PARA EL TAMAÑO DESEADO
         const baseSizesMap = {
-          sm: { width: 160, height: 48 },  
-          md: { width: 240, height: 72 },  
-          lg: { width: 400, height: 200 }, // AJUSTADO: 400px x 200px como quiere el usuario
+          sm: { width: 160, height: 48 },
+          md: { width: 240, height: 72 },
+          lg: { width: 400, height: 200 },
         };
-        
+
         let newDimensions = baseSizesMap[size];
-        
-        // Ajustar tamaños según la variante - MUCHO MENOS AGRESIVOS para aprovechar espacio
-        if (variant === "subtle") {
-          newDimensions = {
-            width: Math.round(newDimensions.width * 0.92),  
-            height: Math.round(newDimensions.height * 0.92)
-          };
-        } else if (variant === "minimal") {
-          newDimensions = {
-            width: Math.round(newDimensions.width * 0.85),  
-            height: Math.round(newDimensions.height * 0.85)
-          };
-        } else if (variant === "watermark") {
-          newDimensions = {
-            width: Math.round(newDimensions.width * 0.75),   
-            height: Math.round(newDimensions.height * 0.75)
-          };
-        }
-        
-        setDimensions(newDimensions);
-        return;
+
+        // Ajustar según variante
+        const variantMultiplier =
+          variant === "subtle" ? 0.92 :
+          variant === "minimal" ? 0.85 :
+          variant === "watermark" ? 0.75 :
+          1.0;
+
+        return {
+          width: Math.round(newDimensions.width * variantMultiplier),
+          height: Math.round(newDimensions.height * variantMultiplier)
+        };
       }
 
-      // Lógica responsiva para tamaño automático con ajustes por variante 
+      // Lógica responsiva para tamaño automático
       let baseDimensions;
       if (width >= 2160 && height >= 3840) {
-        // TV65 - Incrementado muy significativamente para aprovechar espacio
         baseDimensions = { width: 600, height: 180 };
       } else if (width >= 768 && width <= 1200 && height > width) {
-        // Tablet Portrait - AJUSTADO: 400px x 200px como quiere el usuario
         baseDimensions = { width: 400, height: 200 };
       } else if (width < 768) {
-        // Mobile - Incrementado considerablemente
         baseDimensions = { width: 220, height: 66 };
       } else {
-        // Desktop/otros - Incrementado significativamente
         baseDimensions = { width: 380, height: 114 };
       }
-      
-      // Aplicar modificadores de variante - MUCHO MENOS AGRESIVOS para aprovechar espacio
-      let newDimensions = baseDimensions;
-      if (variant === "subtle") {
-        newDimensions = {
-          width: Math.round(baseDimensions.width * 0.92),  
-          height: Math.round(baseDimensions.height * 0.92)
-        };
-      } else if (variant === "minimal") {
-        newDimensions = {
-          width: Math.round(baseDimensions.width * 0.85),  
-          height: Math.round(baseDimensions.height * 0.85)
-        };
-      } else if (variant === "watermark") {
-        newDimensions = {
-          width: Math.round(baseDimensions.width * 0.75),   
-          height: Math.round(baseDimensions.height * 0.75)
-        };
-      }
-      
-      setDimensions(newDimensions);
+
+      // Aplicar modificadores de variante
+      const variantMultiplier =
+        variant === "subtle" ? 0.92 :
+        variant === "minimal" ? 0.85 :
+        variant === "watermark" ? 0.75 :
+        1.0;
+
+      return {
+        width: Math.round(baseDimensions.width * variantMultiplier),
+        height: Math.round(baseDimensions.height * variantMultiplier)
+      };
     };
 
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+    // Throttle: máximo 1 actualización cada 150ms
+    let throttleTimeout: NodeJS.Timeout | null = null;
+    let lastUpdate = 0;
+
+    const updateSize = () => {
+      const now = Date.now();
+      const timeSinceLastUpdate = now - lastUpdate;
+
+      // Si han pasado más de 150ms, actualizar inmediatamente
+      if (timeSinceLastUpdate >= 150) {
+        lastUpdate = now;
+        const newDimensions = calculateDimensions(window.innerWidth, window.innerHeight);
+        setDimensions(newDimensions);
+      } else {
+        // Si no, programar actualización para completar los 150ms
+        if (throttleTimeout) clearTimeout(throttleTimeout);
+        throttleTimeout = setTimeout(() => {
+          lastUpdate = Date.now();
+          const newDimensions = calculateDimensions(window.innerWidth, window.innerHeight);
+          setDimensions(newDimensions);
+        }, 150 - timeSinceLastUpdate);
+      }
+    };
+
+    // Calcular dimensiones iniciales
+    const initialDimensions = calculateDimensions(window.innerWidth, window.innerHeight);
+    setDimensions(initialDimensions);
+
+    // ResizeObserver (más eficiente que window.resize)
+    const resizeObserver = new ResizeObserver(() => {
+      updateSize();
+    });
+
+    // Observar el body (se redimensiona con la ventana)
+    resizeObserver.observe(document.body);
+
+    return () => {
+      resizeObserver.disconnect();
+      if (throttleTimeout) clearTimeout(throttleTimeout);
+    };
   }, [size, variant]);
 
   // Determinar clases CSS basadas en la variante

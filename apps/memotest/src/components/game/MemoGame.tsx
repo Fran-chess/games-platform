@@ -27,8 +27,16 @@ export function MemoGame() {
     playDefeat,
   } = useMemoAudio();
 
-  // Inicializar juego al montar - SIEMPRE iniciar cuando se monta el componente
+  // Inicializar juego al montar + inyectar callbacks de audio
   useEffect(() => {
+    // Inyectar callbacks de victoria/derrota
+    const { setAudioCallbacks } = useMemoStore.getState();
+    setAudioCallbacks({
+      onVictory: playVictory,
+      onDefeat: playDefeat,
+      onPhaseStart: playPhaseStart,
+    });
+
     initGame();
     // Pequeño delay antes de empezar shuffling
     const timer = setTimeout(() => {
@@ -39,25 +47,13 @@ export function MemoGame() {
     return () => clearTimeout(timer);
   }, []); // Solo ejecutar al montar, sin dependencias
 
-  // Manejar transición a fase de premio cuando gana
+  // Manejar transición a fase de premio cuando gana (usando state machine)
   useEffect(() => {
     if (gameState === 'success') {
-      playVictory();
-      // Delay antes de mostrar premio
-      const timer = setTimeout(() => {
-        initializePrizePhase();
-      }, 1500);
-
-      return () => clearTimeout(timer);
+      const { transitionToPrize } = useMemoStore.getState();
+      transitionToPrize();
     }
-  }, [gameState, initializePrizePhase, playVictory]);
-
-  // Reproducir sonido de derrota
-  useEffect(() => {
-    if (gameState === 'failed') {
-      playDefeat();
-    }
-  }, [gameState, playDefeat]);
+  }, [gameState]);
 
   return (
     <div className="relative min-h-screen w-screen overflow-hidden">

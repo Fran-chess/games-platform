@@ -44,11 +44,9 @@ export function PrizePhase() {
       if (card?.hasPrize) {
         playPrizeWin();
 
-        // Confetti solo si no hay prefers-reduced-motion
-        if (!prefersReducedMotion) {
-          setShowConfetti(true);
-          setTimeout(() => setShowConfetti(false), 700); // Breve
-        }
+        // Confetti siempre visible cuando gana
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 4000); // 4 segundos
 
         if ('vibrate' in navigator) {
           navigator.vibrate([50, 50, 50]);
@@ -319,14 +317,14 @@ export function PrizePhase() {
         )}
       </div>
 
-      {/* Confetti optimizado - Solo si ganó y no hay prefers-reduced-motion */}
-      {showConfetti && selectedCard?.hasPrize && (
+      {/* Confetti cuando gana */}
+      {showConfetti && (
         <div className="absolute inset-0 pointer-events-none z-50">
           <MassiveConfetti
             show={true}
             windowSize={{
-              width: window.innerWidth,
-              height: window.innerHeight
+              width: typeof window !== 'undefined' ? window.innerWidth : 1920,
+              height: typeof window !== 'undefined' ? window.innerHeight : 1080
             }}
           />
         </div>
