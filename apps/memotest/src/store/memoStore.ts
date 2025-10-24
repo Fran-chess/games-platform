@@ -1,12 +1,11 @@
 /**
- * MemoTest Game Store - Refactorizado
- * Arquitectura optimizada con separación de responsabilidades
+ * MemoTest Game Store - Optimizado para rendimiento
+ * Estado normalizado + selectores granulares + sin immer
  * @module memoStore
  */
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { immer } from 'zustand/middleware/immer';
 import { memoService, type MemoCard, type PrizeCard } from '@/services/game/memoService';
 
 // ============= TYPES & INTERFACES =============
@@ -35,14 +34,16 @@ export interface GameStats {
 }
 
 /**
- * Estado principal del store
+ * Estado normalizado: cartas por ID + orden
  */
 export interface MemoState {
   // Estado del juego
   gameState: GameState;
-  cards: MemoCard[];
+  cardsById: Record<string, MemoCard>;
+  cardOrder: string[];
   selectedCards: string[];
   prizeCards: PrizeCard[];
+  shakeCards: Set<string>; // IDs de cartas en shake animation
 
   // Estadísticas
   stats: GameStats;
@@ -67,8 +68,9 @@ export interface MemoActions {
 
   // Mecánica del juego
   flipCard: (cardId: string) => void;
-  handleMatchCheck: (firstCard: MemoCard, secondCard: MemoCard) => void;
+  handleMatchCheck: (firstCardId: string, secondCardId: string) => void;
   handleNoMatch: () => void;
+  clearShake: (cardId: string) => void;
 
   // Fase de premio
   initializePrizePhase: () => void;
@@ -95,17 +97,36 @@ const INITIAL_STATS: GameStats = {
   bestScore: null,
 };
 
+// ============= HELPERS =============
+
+/**
+ * Convierte array de cartas a estado normalizado
+ */
+function normalizeCards(cards: MemoCard[]): { cardsById: Record<string, MemoCard>; cardOrder: string[] } {
+  const cardsById: Record<string, MemoCard> = {};
+  const cardOrder: string[] = [];
+
+  cards.forEach(card => {
+    cardsById[card.id] = card;
+    cardOrder.push(card.id);
+  });
+
+  return { cardsById, cardOrder };
+}
+
 // ============= STORE =============
 
 export const useMemoStore = create<MemoStore>()(
   devtools(
     persist(
-      immer((set, get) => ({
+      (set, get) => ({
         // Estado inicial
         gameState: 'waiting' as GameState,
-        cards: [],
+        cardsById: {},
+        cardOrder: [],
         selectedCards: [],
         prizeCards: [],
+        shakeCards: new Set<string>(),
         stats: INITIAL_STATS,
         isProcessing: false,
         showConfetti: false,
@@ -114,69 +135,95 @@ export const useMemoStore = create<MemoStore>()(
         // ============= ACTIONS =============
 
         initGame: () => {
-          set((state) => {
-            state.cards = memoService.generateCards('medical');
-            state.gameState = 'waiting';
-            state.selectedCards = [];
-            state.prizeCards = [];
-            state.stats = { ...INITIAL_STATS, bestScore: state.stats.bestScore };
-            state.showConfetti = false;
-            state.isProcessing = false;
+          const cards = memoService.generateCards('medical');
+          const { cardsById, cardOrder } = normalizeCards(cards);
+          const currentBest = get().stats.bestScore;
+
+          set({
+            cardsById,
+            cardOrder,
+            gameState: 'waiting',
+            selectedCards: [],
+            prizeCards: [],
+            shakeCards: new Set(),
+            stats: { ...INITIAL_STATS, bestScore: currentBest },
+            showConfetti: false,
+            isProcessing: false,
           });
         },
 
         startShuffling: () => {
-          set((state) => {
-            state.gameState = 'shuffling';
-            // Re-generar y mezclar cards
-            state.cards = memoService.generateCards('medical');
+          const cards = memoService.generateCards('medical');
+          const { cardsById, cardOrder } = normalizeCards(cards);
+
+          set({
+            gameState: 'shuffling',
+            cardsById,
+            cardOrder,
           });
         },
 
         startMemorizing: () => {
-          set((state) => {
-            state.gameState = 'memorizing';
-            // Voltear todas las cartas para memorización
-            state.cards.forEach(card => {
-              card.isFlipped = true;
-            });
+          const state = get();
+          const newCardsById = { ...state.cardsById };
+
+          // Voltear todas las cartas
+          state.cardOrder.forEach(id => {
+            newCardsById[id] = { ...newCardsById[id], isFlipped: true };
+          });
+
+          set({
+            gameState: 'memorizing',
+            cardsById: newCardsById,
           });
         },
 
         startPlaying: () => {
-          set((state) => {
-            state.gameState = 'playing';
-            // Ocultar todas las cartas
-            state.cards.forEach(card => {
-              card.isFlipped = false;
-            });
+          const state = get();
+          const newCardsById = { ...state.cardsById };
+
+          // Ocultar todas las cartas
+          state.cardOrder.forEach(id => {
+            newCardsById[id] = { ...newCardsById[id], isFlipped: false };
+          });
+
+          set({
+            gameState: 'playing',
+            cardsById: newCardsById,
           });
         },
 
         resetGame: () => {
-          set((state) => {
-            state.gameState = 'waiting';
-            state.cards = [];
-            state.selectedCards = [];
-            state.prizeCards = [];
-            state.stats = { ...INITIAL_STATS, bestScore: state.stats.bestScore };
-            state.showConfetti = false;
-            state.isProcessing = false;
+          const currentBest = get().stats.bestScore;
+
+          set({
+            gameState: 'waiting',
+            cardsById: {},
+            cardOrder: [],
+            selectedCards: [],
+            prizeCards: [],
+            shakeCards: new Set(),
+            stats: { ...INITIAL_STATS, bestScore: currentBest },
+            showConfetti: false,
+            isProcessing: false,
           });
         },
 
         restartGame: () => {
-          set((state) => {
-            // Resetear stats y estado sin pasar por 'waiting'
-            state.stats = { ...INITIAL_STATS, bestScore: state.stats.bestScore };
-            state.selectedCards = [];
-            state.prizeCards = [];
-            state.showConfetti = false;
-            state.isProcessing = false;
+          const cards = memoService.generateCards('medical');
+          const { cardsById, cardOrder } = normalizeCards(cards);
+          const currentBest = get().stats.bestScore;
 
-            // Ir directamente a 'shuffling' con nuevas cartas
-            state.gameState = 'shuffling';
-            state.cards = memoService.generateCards('medical');
+          set({
+            stats: { ...INITIAL_STATS, bestScore: currentBest },
+            selectedCards: [],
+            prizeCards: [],
+            shakeCards: new Set(),
+            showConfetti: false,
+            isProcessing: false,
+            gameState: 'shuffling',
+            cardsById,
+            cardOrder,
           });
         },
 
@@ -192,97 +239,120 @@ export const useMemoStore = create<MemoStore>()(
             return;
           }
 
-          const card = state.cards.find(c => c.id === cardId);
+          const card = state.cardsById[cardId];
           if (!card || card.isFlipped || card.isMatched) {
             return;
           }
 
-          set((state) => {
-            const card = state.cards.find(c => c.id === cardId);
-            if (!card) return;
+          const newSelectedCards = [...state.selectedCards, cardId];
+          const newCardsById = {
+            ...state.cardsById,
+            [cardId]: { ...card, isFlipped: true }
+          };
 
-            // Voltear la carta
-            card.isFlipped = true;
-            state.selectedCards.push(cardId);
+          const updates: Partial<MemoState> = {
+            cardsById: newCardsById,
+            selectedCards: newSelectedCards,
+          };
 
-            // Si hay 2 cartas seleccionadas, marcar como procesando
-            if (state.selectedCards.length === 2) {
-              state.isProcessing = true;
-              // Incrementar movimientos
-              state.stats.movesUsed++;
-            }
-          });
+          // Si hay 2 cartas seleccionadas, marcar como procesando
+          if (newSelectedCards.length === 2) {
+            updates.isProcessing = true;
+            updates.stats = {
+              ...state.stats,
+              movesUsed: state.stats.movesUsed + 1
+            };
+          }
+
+          set(updates);
         },
 
-        handleMatchCheck: (firstCard: MemoCard, secondCard: MemoCard) => {
-          set((state) => {
-            const card1 = state.cards.find(c => c.id === firstCard.id);
-            const card2 = state.cards.find(c => c.id === secondCard.id);
+        handleMatchCheck: (firstCardId: string, secondCardId: string) => {
+          const state = get();
+          const card1 = state.cardsById[firstCardId];
+          const card2 = state.cardsById[secondCardId];
 
-            if (!card1 || !card2) return;
+          if (!card1 || !card2) return;
 
-            // Marcar como emparejadas
-            card1.isMatched = true;
-            card2.isMatched = true;
-            state.stats.matchesFound++;
-
-            // Resetear selección
-            state.selectedCards = [];
-            state.isProcessing = false;
+          set({
+            cardsById: {
+              ...state.cardsById,
+              [firstCardId]: { ...card1, isMatched: true },
+              [secondCardId]: { ...card2, isMatched: true },
+            },
+            stats: {
+              ...state.stats,
+              matchesFound: state.stats.matchesFound + 1,
+            },
+            selectedCards: [],
+            isProcessing: false,
           });
         },
 
         handleNoMatch: () => {
-          set((state) => {
-            // Voltear las cartas de vuelta
-            state.cards.forEach(card => {
-              if (state.selectedCards.includes(card.id)) {
-                card.isFlipped = false;
-              }
-            });
+          const state = get();
+          const newCardsById = { ...state.cardsById };
+          const newShakeCards = new Set(state.selectedCards);
 
-            state.selectedCards = [];
-            state.isProcessing = false;
+          // Voltear las cartas de vuelta
+          state.selectedCards.forEach(id => {
+            const card = newCardsById[id];
+            if (card) {
+              newCardsById[id] = { ...card, isFlipped: false };
+            }
+          });
+
+          set({
+            cardsById: newCardsById,
+            selectedCards: [],
+            isProcessing: false,
+            shakeCards: newShakeCards,
           });
         },
 
+        clearShake: (cardId: string) => {
+          const state = get();
+          const newShakeCards = new Set(state.shakeCards);
+          newShakeCards.delete(cardId);
+          set({ shakeCards: newShakeCards });
+        },
+
         initializePrizePhase: () => {
-          set((state) => {
-            state.gameState = 'prize';
-            state.prizeCards = memoService.generatePrizeCards();
-            state.showConfetti = true;
+          set({
+            gameState: 'prize',
+            prizeCards: memoService.generatePrizeCards(),
+            showConfetti: true,
           });
         },
 
         selectPrizeCard: (cardId: string) => {
-          set((state) => {
-            const card = state.prizeCards.find(c => c.id === cardId);
-            if (!card) return;
+          const state = get();
+          const cardIndex = state.prizeCards.findIndex(c => c.id === cardId);
+          if (cardIndex === -1) return;
 
-            card.isRevealed = true;
+          const card = state.prizeCards[cardIndex];
+          const newPrizeCards = [...state.prizeCards];
+          newPrizeCards[cardIndex] = { ...card, isRevealed: true };
 
-            // Si ganó premio, mostrar confetti masivo
-            if (card.hasPrize) {
-              state.showConfetti = true;
-            }
+          set({
+            prizeCards: newPrizeCards,
+            showConfetti: card.hasPrize,
           });
         },
 
         setShowConfetti: (show) => {
-          set((state) => {
-            state.showConfetti = show;
-          });
+          set({ showConfetti: show });
         },
 
         toggleSound: () => {
-          set((state) => {
-            state.soundEnabled = !state.soundEnabled;
-          });
+          const state = get();
+          set({ soundEnabled: !state.soundEnabled });
         },
 
         updateTimeElapsed: (time) => {
-          set((state) => {
-            state.stats.timeElapsed = time;
+          const state = get();
+          set({
+            stats: { ...state.stats, timeElapsed: time }
           });
         },
 
@@ -296,38 +366,34 @@ export const useMemoStore = create<MemoStore>()(
             timeRemaining
           );
 
-          set((draft) => {
-            if (validation.hasWon) {
-              // Victoria - pasar a fase de premio
-              draft.gameState = 'success';
+          if (validation.hasWon) {
+            const score = memoService.calculateScore(
+              state.stats.movesUsed,
+              state.stats.timeElapsed
+            );
 
-              // Calcular puntaje
-              const score = memoService.calculateScore(
-                draft.stats.movesUsed,
-                draft.stats.timeElapsed
-              );
-              draft.stats.score = score;
-
-              // Actualizar mejor puntaje
-              if (!draft.stats.bestScore || score > draft.stats.bestScore) {
-                draft.stats.bestScore = score;
+            set({
+              gameState: 'success',
+              stats: {
+                ...state.stats,
+                score,
+                bestScore: !state.stats.bestScore || score > state.stats.bestScore
+                  ? score
+                  : state.stats.bestScore
               }
-            } else if (validation.hasFailed) {
-              // Derrota
-              draft.gameState = 'failed';
-            }
-          });
+            });
+          } else if (validation.hasFailed) {
+            set({ gameState: 'failed' });
+          }
         },
-      })),
+      }),
       {
         name: 'memo-storage',
         partialize: (state) => ({
+          // Solo persistir mejores puntajes y configuración
           stats: {
-            ...state.stats,
-            movesUsed: 0,
-            matchesFound: 0,
-            timeElapsed: 0,
-            score: 0,
+            ...INITIAL_STATS,
+            bestScore: state.stats.bestScore,
           },
           soundEnabled: state.soundEnabled,
         }),
@@ -340,12 +406,57 @@ export const useMemoStore = create<MemoStore>()(
   )
 );
 
-// ============= SELECTORS =============
+// ============= SELECTORES GRANULARES =============
 
+/**
+ * Selectores base
+ */
 export const useGameState = () => useMemoStore((state) => state.gameState);
-export const useCards = () => useMemoStore((state) => state.cards);
-export const useStats = () => useMemoStore((state) => state.stats);
 export const useIsProcessing = () => useMemoStore((state) => state.isProcessing);
-export const usePrizeCards = () => useMemoStore((state) => state.prizeCards);
-export const useShowConfetti = () => useMemoStore((state) => state.showConfetti);
 export const useSoundEnabled = () => useMemoStore((state) => state.soundEnabled);
+export const useShowConfetti = () => useMemoStore((state) => state.showConfetti);
+
+/**
+ * Selectores primitivos para el HUD (sin crear objetos nuevos)
+ */
+export const useMovesUsed = () => useMemoStore((state) => state.stats.movesUsed);
+export const useMatchesFound = () => useMemoStore((state) => state.stats.matchesFound);
+
+/**
+ * Selector para obtener array de cartas (solo cuando sea necesario)
+ */
+export const useCardsList = () => useMemoStore((state) =>
+  state.cardOrder.map(id => state.cardsById[id])
+);
+
+/**
+ * Selectores granulares primitivos - Sin crear objetos nuevos
+ */
+export const useCardFlipped = (cardId: string) =>
+  useMemoStore((state) => state.cardsById[cardId]?.isFlipped ?? false);
+
+export const useCardMatched = (cardId: string) =>
+  useMemoStore((state) => state.cardsById[cardId]?.isMatched ?? false);
+
+export const useCardIcon = (cardId: string) =>
+  useMemoStore((state) => state.cardsById[cardId]?.icon ?? '');
+
+/**
+ * Selector para orden de cartas
+ */
+export const useCardOrder = () => useMemoStore((state) => state.cardOrder);
+
+/**
+ * Selector para shake state de una carta
+ */
+export const useCardShake = (cardId: string) => useMemoStore((state) => state.shakeCards.has(cardId));
+
+/**
+ * Selector para prize cards
+ */
+export const usePrizeCards = () => useMemoStore((state) => state.prizeCards);
+
+/**
+ * Stats completos (solo para pantallas finales)
+ */
+export const useStats = () => useMemoStore((state) => state.stats);
