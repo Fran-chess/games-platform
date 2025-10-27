@@ -12,9 +12,6 @@
   },
   "dependencies": {
     "@games-platform/ui": "workspace:*",
-    "@games-platform/game-core": "workspace:*",
-    "@games-platform/types": "workspace:*",
-    "@games-platform/config": "workspace:*",
     "@emotion/is-prop-valid": "^1.4.0",
     "@heroicons/react": "^2.2.0",
     "framer-motion": "^12.10.0",

@@ -1,7 +1,7 @@
 "use client";
 import { useGameStore } from "@/store/gameStore";
 import { motion } from "framer-motion";
-import { Button } from "@games-platform/ui";
+import { Button } from "@/components/ui/Button";
 import {
   CheckCircleIcon,
   XCircleIcon,

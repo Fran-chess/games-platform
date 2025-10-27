@@ -46,13 +46,10 @@ This is a **Turborepo + PNPM monorepo** containing multiple game applications an
 
 ### Apps
 - **`apps/roulette`** (port 3000): Interactive roulette game with question system, originally migrated from a standalone project. Features canvas-based wheel rendering, physics simulation, and audio management.
-- **`apps/memotest`** (port 3001): Memory test game (in development)
+- **`apps/memotest`** (port 3001): Memory test game with card matching mechanics, memorization phases, and prize selection.
 
 ### Shared Packages
-- **`@games-platform/ui`**: Reusable UI components (Button, Card, Loader, MassiveConfetti, Confetti) using Tailwind CSS and Framer Motion
-- **`@games-platform/game-core`**: Game logic primitives (hooks like useTimer, useSound, base Zustand stores)
-- **`@games-platform/types`**: Shared TypeScript interfaces (BaseGame, Player, GameSession, GameResult)
-- **`@games-platform/config`**: Base configurations for TypeScript and Tailwind CSS
+- **`@games-platform/ui`**: Minimal shared UI package containing only `MassiveConfetti` component (used by both games for victory celebrations)
 
 ### Technology Stack
 - **Build System**: Turborepo for monorepo orchestration with caching
@@ -67,8 +64,10 @@ This is a **Turborepo + PNPM monorepo** containing multiple game applications an
 ### Key Architectural Patterns
 
 #### Package Dependencies
-Apps depend on shared packages using workspace protocol (`workspace:*`), ensuring:
-- Local package changes are immediately available
+Apps have minimal shared dependencies following a pragmatic architecture:
+- Only `@games-platform/ui` is shared (contains `MassiveConfetti` component)
+- Each game has its own implementations of hooks, stores, and utilities tailored to specific needs
+- Workspace protocol (`workspace:*`) ensures shared package changes are immediately available
 - No version mismatch between packages
 - Efficient development with hot module replacement
 
@@ -109,18 +108,65 @@ Apps may require environment-specific configuration. Check individual app CLAUDE
 3. Turborepo caches unchanged package builds for efficiency
 
 #### Adding new shared components
-1. Add component to appropriate package in `packages/`
-2. Export from package's index file
-3. Import in apps using package name: `import { Component } from '@games-platform/ui'`
+**Important**: Only add components to `@games-platform/ui` if they are **truly shared** by multiple games. The monorepo follows a minimal sharing philosophy:
+1. Verify the component is needed by 2+ games
+2. Add component to `packages/ui/src/components/`
+3. Export from `packages/ui/src/index.ts`
+4. Import in apps: `import { Component } from '@games-platform/ui'`
+
+If a component is only used by one game, keep it in that game's `src/components/` directory.
 
 #### Creating a new game
 1. Copy existing app structure: `cp -r apps/roulette apps/new-game`
 2. Update `package.json` name to `@games-platform/new-game`
-3. Adjust development port to avoid conflicts
-4. Leverage shared packages for common functionality
+3. Adjust development port to avoid conflicts (3002, 3003, etc.)
+4. Implement game-specific logic locally - only extract to shared packages if reused across multiple games
+5. Add dependency to `@games-platform/ui` only if using `MassiveConfetti` or other shared components
 
 ### Performance Optimizations
 - Turborepo caching reduces rebuild times
-- PNPM's efficient node_modules structure saves disk space
-- Shared packages are built once and reused
+- PNPM's efficient node_modules structure saves disk space (symlinks to central store)
+- Minimal shared packages reduce build complexity
+- Each game optimizes independently for its specific use case
 - Next.js optimizations (code splitting, image optimization) apply to all apps
+
+### Architecture Philosophy
+
+This monorepo follows a **pragmatic minimal sharing approach**:
+
+#### ✅ What We Share
+- **UI Components**: Only truly reusable visual components used by multiple games (`MassiveConfetti`)
+- **Build tooling**: Turborepo, PNPM, shared dev scripts
+- **Deployment patterns**: Common Vercel configuration approach
+
+#### ❌ What We Don't Share
+- **Game logic**: Each game has unique mechanics, no forced abstractions
+- **Hooks**: `useTimer`, `useSound` implemented per-game with specific requirements
+- **Types**: Game-specific TypeScript interfaces live with their games
+- **State management**: Each game has its own Zustand store structure
+- **Configuration**: Tailwind configs are game-specific (different design systems)
+
+**Why?** Premature abstraction creates maintenance burden. We only share when there's clear, proven duplication across multiple games.
+
+## Project History
+
+### Code Cleanup (October 2025)
+A major refactoring removed unused shared packages and code to simplify the monorepo:
+
+**Removed packages:**
+- `@games-platform/game-core` - Unused hooks (`useTimer`, `useSound`) and stores
+- `@games-platform/types` - Generic types that didn't fit game-specific needs
+- `@games-platform/config` - Unused base configurations
+
+**Removed from `@games-platform/ui`:**
+- `Button` - Moved to `apps/roulette` (only user)
+- `Card`, `Loader`, `Confetti` - Never used
+- `cn` utility - Not needed
+
+**Results:**
+- 75% reduction in shared packages (4 → 1)
+- 90% reduction in exported components (10 → 1)
+- ~500 lines of dead code removed
+- Faster builds and clearer architecture
+
+**Current structure:** Only `MassiveConfetti` remains in shared packages, as it's the only component genuinely used by both games.

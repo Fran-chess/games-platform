@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install --frozen-lockfile)",
+      "Bash(pnpm run lint)",
+      "Bash(pnpm run test*)",
+      "Bash(python -m venv .venv)",
+      "Bash(. .venv/bin/activate && pip install -r requirements.txt)",
+      "Bash(pytest -q)"
+    ],
+    "ask": [
+      "Bash(pnpm run dev*)",
+      "Bash(docker compose up*)",
+      "Bash(git push*)"
+    ],
+    "deny": [
+      "Bash(curl*)",
+      "Bash(wget*)",
+      "Bash(ssh*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(~/.ssh/**)",
+      "Read(./config/credentials.json)",
+      "Read(./build)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  }
+}
