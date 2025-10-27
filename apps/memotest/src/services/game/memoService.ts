@@ -158,6 +158,18 @@ export class MemoService {
       };
     }
 
+    // Derrota anticipada: es matemáticamente imposible ganar
+    // Si los pares encontrados + movimientos restantes < pares requeridos → perdió
+    const movesLeft = this.config.maxMoves - movesUsed;
+    const maxPossibleMatches = matchesFound + movesLeft;
+    if (maxPossibleMatches < this.config.requiredPairs) {
+      return {
+        hasWon: false,
+        hasFailed: true,
+        reason: 'max_moves'
+      };
+    }
+
     // Derrota: se acabaron los movimientos
     if (movesUsed >= this.config.maxMoves) {
       return {

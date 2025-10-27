@@ -38,7 +38,7 @@ export function MemorizationPhase() {
 
           <div className="relative z-10 flex justify-between items-center gap-3">
             {/* Instrucciones compactas */}
-            <div className="text-left flex-1">
+            <div className={`flex-1 ${phase === 'shuffling' ? 'text-center' : 'text-left'}`}>
               {phase === 'shuffling' && (
                 <div key="shuffling">
                   <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-tight">Mezclando cartas...</h2>
@@ -53,17 +53,6 @@ export function MemorizationPhase() {
                   </h2>
                   <p className="text-sm lg:text-base text-white/85 mt-1 font-medium">
                     Recuerda la posición de cada símbolo
-                  </p>
-                </div>
-              )}
-
-              {phase === 'hiding' && (
-                <div key="hiding">
-                  <h2 className="text-2xl lg:text-3xl font-extrabold text-emerald-400 tracking-tight leading-tight">
-                    ¡A jugar!
-                  </h2>
-                  <p className="text-sm lg:text-base text-white/85 mt-1 font-medium">
-                    Encuentra los 2 pares
                   </p>
                 </div>
               )}

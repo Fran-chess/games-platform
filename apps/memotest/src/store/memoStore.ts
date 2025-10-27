@@ -332,13 +332,10 @@ export const useMemoStore = create<MemoStore>()(
                 currentState.audioCallbacks.onError?.();
                 get().handleNoMatch();
 
-                // Check derrota por movimientos
-                const config = memoService.getConfig();
-                if (newMovesUsed >= config.maxMoves && currentState.stats.matchesFound < config.requiredPairs) {
-                  setTimeout(() => {
-                    get().checkGameEnd(get().timeLeft);
-                  }, 1000);
-                }
+                // Check derrota después de cada error (incluye derrota anticipada)
+                setTimeout(() => {
+                  get().checkGameEnd(get().timeLeft);
+                }, 1000);
               }
             }, 600);
 
@@ -543,14 +540,8 @@ export const useMemoStore = create<MemoStore>()(
           get().clearPhaseTimers();
           get().stopClock();
 
-          // Transición memorizing → hiding → playing
-          const timer = setTimeout(() => {
-            get().transitionToPlaying();
-          }, 1000);
-
-          const timers = get().phaseTransitionTimers;
-          timers.add(timer);
-          set({ memorizationPhase: 'hiding', phaseTransitionTimers: timers });
+          // Transición directa: memorizing → playing (sin fase hiding intermedia)
+          get().transitionToPlaying();
         },
 
         transitionToPlaying: () => {
