@@ -10,11 +10,18 @@
     "dev:memotest": "pnpm --filter @games-platform/memotest dev",
     "build": "turbo run build",
     "build:roulette": "pnpm --filter @games-platform/roulette build",
+    "build:perf": "pnpm build --filter=@games-platform/roulette --filter=@games-platform/memotest",
     "start": "turbo run start",
+    "start:all": "concurrently \"pnpm --filter=@games-platform/roulette start -p 3000\" \"pnpm --filter=@games-platform/memotest start -p 3001\"",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean",
-    "test": "echo \"No tests yet\" && exit 0"
+    "test": "echo \"No tests yet\" && exit 0",
+    "test:lighthouse": "bash scripts/lighthouse-test.sh",
+    "test:perf": "playwright test",
+    "test:perf:memotest": "playwright test --project=memotest",
+    "test:perf:roulette": "playwright test --project=roulette",
+    "test:perf:report": "playwright show-report"
   },
   "keywords": [],
   "author": "",
@@ -24,7 +31,11 @@
   },
   "packageManager": "pnpm@10.17.0",
   "devDependencies": {
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.56.1",
+    "concurrently": "^9.2.1",
     "turbo": "^2.5.8",
+    "wait-on": "^9.0.1",
     "web-vitals": "^5.1.0"
   }
 }

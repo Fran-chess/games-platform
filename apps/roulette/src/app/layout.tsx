@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import ShellRootClient from "@/components/layout/ShellRootClient";
+import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 
 // [modificación] Configuración de viewport separada según Next.js 15
 export const viewport: Viewport = {
@@ -56,6 +57,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="bg-main-gradient h-screen font-sans text-white">
+        <PerformanceMonitor />
         <ShellRootClient>{children}</ShellRootClient>
       </body>
     </html>

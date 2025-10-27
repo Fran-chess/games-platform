@@ -1,0 +1,8 @@
+{
+  "loadTime": 2500,
+  "lcp": 2000,
+  "fcp": 1500,
+  "ttfb": 300,
+  "fpsFlip": 58,
+  "memoryIncrease": 10
+}

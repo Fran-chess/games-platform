@@ -7,6 +7,12 @@ node_modules
 coverage
 *.lcov
 .nyc_output
+.lighthouseci
+.playwright-report
+playwright-report/
+test-results/
+benchmarks/results/
+benchmarks/PERFORMANCE_REPORT.md
 
 # Next.js
 .next/
