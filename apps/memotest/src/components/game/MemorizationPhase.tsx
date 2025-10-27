@@ -107,13 +107,14 @@ export function MemorizationPhase() {
         transition={{ duration: 0.2, ease: 'easeOut' }}
       >
         <div
-          className="grid grid-cols-6 grid-rows-2 auto-rows-fr gap-6 w-full place-items-center"
-          style={{ contain: 'layout paint', perspective: '1200px' }}
+          className="grid grid-cols-6 grid-rows-2 auto-rows-fr gap-x-6 gap-y-8 md:gap-x-8 md:gap-y-10 w-full place-items-center transform-gpu"
+          style={{ contain: 'layout paint style' }}
         >
           {cardOrder.map((cardId) => (
             <div
               key={cardId}
-              className="relative w-full aspect-[3/4]"
+              className="relative w-full aspect-[3/4] transform-gpu"
+              style={{ contain: 'layout style' }}
             >
               <MemoCard
                 cardId={cardId}

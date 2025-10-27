@@ -50,8 +50,8 @@ const config: Config = {
       },
       backgroundImage: {
         'main-gradient': 'linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f172a 50%, #1e293b 75%, #334155 100%)',
-        // Gradiente profesional con colores de marca DarSalud - Luminoso y elegante
-        'game-gradient': 'linear-gradient(135deg, #08C3FC 0%, #0435A3 40%, #0652D4 60%, #04EBCF 100%)',
+        // Gradiente optimizado: zona oscura arriba-izquierda (contraste HUD), clara abajo-derecha
+        'game-gradient': 'radial-gradient(ellipse at 80% 70%, #04EBCF 0%, #08C3FC 25%, #0652D4 45%, #0435A3 70%, #032B7A 100%)',
         // Variantes de gradientes de marca
         'brand-gradient': 'linear-gradient(180deg, #0435A3 0%, #08C3FC 50%, #04EBCF 100%)',
         'brand-gradient-soft': 'linear-gradient(135deg, #0435A3 0%, #08C3FC 35%, #04EBCF 65%, #F1AAFA 100%)',

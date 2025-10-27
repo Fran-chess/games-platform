@@ -1,13 +1,13 @@
 /**
- * MemoCard Component - Máxima optimización
- * Selectores primitivos + Comparador personalizado + Shake React
+ * MemoCard Component - Ultra-optimizado para tablets
+ * CSS-first animations + Sin backdrop-blur + Containment
  * @module MemoCard
  */
 
 'use client';
 
-import { motion } from 'framer-motion';
-import { memo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { memo, useEffect, useRef } from 'react';
 import { useCardFlipped, useCardMatched, useCardIcon, useCardShake, useMemoStore } from '@/store/memoStore';
 
 interface MemoCardProps {
@@ -25,7 +25,7 @@ function areEqual(prev: MemoCardProps, next: MemoCardProps) {
 }
 
 /**
- * Card hiper-optimizado - Selectores primitivos + Comparador
+ * Card hiper-optimizado - CSS animations + GPU acceleration
  */
 export const MemoCard = memo(function MemoCard({
   cardId,
@@ -37,6 +37,8 @@ export const MemoCard = memo(function MemoCard({
   const isMatched = useCardMatched(cardId);
   const icon = useCardIcon(cardId);
   const isShaking = useCardShake(cardId);
+  const prefersReducedMotion = useReducedMotion();
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const handleClick = () => {
     if (!disabled && !isFlipped && !isMatched) {
@@ -44,40 +46,51 @@ export const MemoCard = memo(function MemoCard({
     }
   };
 
+  // Limpiar shake con CSS animation end (sin Framer Motion callback)
+  useEffect(() => {
+    if (!isShaking || !cardRef.current) return;
+
+    const handleAnimationEnd = (e: AnimationEvent) => {
+      if (e.animationName === 'shake') {
+        useMemoStore.getState().clearShake(cardId);
+      }
+    };
+
+    const el = cardRef.current;
+    el.addEventListener('animationend', handleAnimationEnd);
+    return () => el.removeEventListener('animationend', handleAnimationEnd);
+  }, [isShaking, cardId]);
+
   return (
     <motion.div
-      className="relative w-full h-full cursor-pointer"
+      ref={cardRef}
+      className={`
+        relative w-full h-full cursor-pointer
+        transform-gpu
+        transition-transform duration-150 ease-out
+        ${!disabled && !isFlipped && !isMatched ? 'hover:scale-[1.02] active:scale-[0.96]' : ''}
+        ${isShaking ? 'animate-shake' : ''}
+        ${isMatched ? 'scale-95' : ''}
+      `}
       onClick={handleClick}
-      whileTap={!disabled && !isFlipped && !isMatched ? { scale: 0.96 } : {}}
       initial={false}
-      animate={{
-        scale: isMatched ? 0.95 : 1,
-        x: isShaking ? [0, -4, 4, -4, 4, 0] : 0,
-      }}
-      transition={{
-        scale: { duration: 0.2, ease: 'easeOut' },
-        x: { duration: 0.4, ease: 'easeInOut' },
-      }}
-      onAnimationComplete={(definition: any) => {
-        // Limpiar shake al terminar animación (sin setTimeout)
-        if (definition.x === 0 && isShaking) {
-          const { clearShake } = useMemoStore.getState();
-          clearShake(cardId);
-        }
-      }}
+      layout={false}
+      animate={prefersReducedMotion ? {} : { scale: isMatched ? 0.95 : 1 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
       style={{
-        // will-change just-in-time: solo durante flip/shake
-        willChange: (isFlipped !== isMatched || isShaking) ? 'transform' : 'auto',
+        contain: 'layout paint style',
+        willChange: isShaking || (isFlipped !== isMatched) ? 'transform' : 'auto',
         backfaceVisibility: 'hidden',
-        transform: 'translateZ(0)', // Force GPU layer
+        perspective: '1200px', // Perspective movida al wrapper de cada card
       }}
     >
       {/* Parte trasera de la carta - Logo institucional DarSalud */}
       <div
         className={`
           absolute inset-0 rounded-2xl
-          bg-white/10 backdrop-blur-md
-          shadow-lg border-2 border-cyan-400/50
+          bg-white/5
+          shadow-md
+          ring-1 ring-white/10
           flex items-center justify-center
           overflow-hidden
           transition-opacity duration-150
@@ -85,30 +98,36 @@ export const MemoCard = memo(function MemoCard({
           ${isFlipped || isMatched ? 'opacity-0 pointer-events-none' : 'opacity-100'}
         `}
       >
+        {/* Overlay radial para dar profundidad y resaltar el logo */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08)_0%,transparent_70%)] pointer-events-none" />
+
+        {/* Gradiente sutil de fondo */}
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/20 via-blue-700/15 to-cyan-800/20 pointer-events-none" />
+
         <div className="relative z-10 w-[70%] h-[70%] flex items-center justify-center">
           <img
             src="/images/8.svg"
             alt="DarSalud Logo"
-            className="w-full h-full object-contain select-none pointer-events-none"
+            className="w-full h-full object-contain select-none pointer-events-none opacity-80"
             draggable={false}
           />
         </div>
 
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent rounded-2xl pointer-events-none" />
+        {/* Brillo superior sutil */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/8 to-transparent rounded-2xl pointer-events-none" />
       </div>
 
       {/* Parte frontal de la carta */}
       <div
         className={`
           absolute inset-0 rounded-2xl
-          border-2
           flex items-center justify-center
           overflow-hidden
           transition-opacity duration-150
           ${isFlipped || isMatched ? 'opacity-100' : 'opacity-0 pointer-events-none'}
           ${isMatched
-            ? 'bg-gradient-to-br from-emerald-400/95 via-green-500/95 to-emerald-600/95 border-emerald-300/60 shadow-lg'
-            : 'bg-white/95 backdrop-blur-md border-cyan-400/40 shadow-md'
+            ? 'bg-gradient-to-br from-emerald-400/95 via-green-500/95 to-emerald-600/95 ring-2 ring-emerald-300/60 shadow-lg'
+            : 'bg-white ring-1 ring-cyan-400/30 shadow-md'
           }
         `}
       >
