@@ -1,15 +1,15 @@
 {
-  "name": "DarSalud - Juego Interactivo",
-  "short_name": "DarSalud",
-  "description": "Juego interactivo de DarSalud optimizado para tablets (Admin) y TV 4K (Viewer) con sincronización en tiempo real",
+  "name": "MemoTest DarSalud",
+  "short_name": "MemoTest",
+  "description": "Juego de memoria interactivo para tablets - DarSalud Congreso de Enfermería",
   "start_url": "/",
-  "display": "standalone",
-  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
   "orientation": "landscape",
-  "theme_color": "#192A6E",
-  "background_color": "#121F4B",
+  "theme_color": "#0652D4",
+  "background_color": "#0435A3",
   "scope": "/",
-  "categories": ["games", "education", "productivity"],
+  "categories": ["games", "entertainment"],
   "lang": "es",
   "icons": [
     {
@@ -29,50 +29,12 @@
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Panel Administración",
-      "short_name": "Admin",
-      "description": "Panel de administración para tablets - Control del juego",
-      "url": "/admin",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Vista TV",
-      "short_name": "TV",
-      "description": "Vista para TV 4K - Pantalla de visualización",
-      "url": "/tv",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
     }
   ],
   "prefer_related_applications": false,
-  "related_applications": [],
-  "protocol_handlers": [],
-  "edge_side_panel": {
-    "preferred_width": 320
-  },
   "launch_handler": {
     "client_mode": "focus-existing"
   },
-  "capture_links": "existing-client-navigate",
-  "handle_links": "preferred",
-  "id": "darsalud-interactive-game",
-  "screenshots": [],
-  "iarc_rating_id": "",
-  "file_handlers": [],
+  "id": "darsalud-memotest",
   "version": "1.0.0"
 } 
