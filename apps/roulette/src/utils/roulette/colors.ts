@@ -9,10 +9,10 @@
  */
 export const ROULETTE_COLORS = {
   AZUL_INTENSO: "#192A6E",    // Exclusivo para "Dar Salud"
-  VERDE_SALUD: "#5ACCC1",     // Prevención
-  CELESTE_MEDIO: "#40C0EF",   // Criterios clínicos
-  AMARILLO_DS: "#F2BD35",     // Cuidado interdisciplinario
-  ROSADO_LILA: "#D5A7CD",     // Ética y derechos
+  VERDE_SALUD: "#5ACCC1",     // Seguridad y bioseguridad
+  CELESTE_MEDIO: "#40C0EF",   // Práctica profesional
+  AMARILLO_DS: "#F2BD35",     // Cuidado clínico
+  ROSADO_LILA: "#D5A7CD",     // Cuidar con empatía
 } as const;
 
 /**
@@ -31,10 +31,10 @@ export const AVAILABLE_COLORS = [
  */
 export const CATEGORY_COLOR_MAP: Record<string, string> = {
   "Dar Salud": ROULETTE_COLORS.AZUL_INTENSO,
-  "Prevención": ROULETTE_COLORS.VERDE_SALUD,
-  "Criterios clínicos": ROULETTE_COLORS.CELESTE_MEDIO,
-  "Cuidado interdisciplinario": ROULETTE_COLORS.AMARILLO_DS,
-  "Ética y derechos": ROULETTE_COLORS.ROSADO_LILA,
+  "Cuidar con empatía": ROULETTE_COLORS.ROSADO_LILA,
+  "Práctica profesional": ROULETTE_COLORS.CELESTE_MEDIO,
+  "Seguridad y bioseguridad": ROULETTE_COLORS.VERDE_SALUD,
+  "Cuidado clínico": ROULETTE_COLORS.AMARILLO_DS,
 };
 
 /**
@@ -64,8 +64,11 @@ export function getContrastColor(hexColor: string): string {
  * @returns Categoría normalizada
  */
 export function normalizeCategory(category: string): string {
-  // "Dar Salud II" se mapea a "Dar Salud" para mantener el mismo color
-  return category === "Dar Salud II" ? "Dar Salud" : category;
+  // Todas las categorías "Dar Salud" se mapean a "Dar Salud" para mantener el mismo color y nombre
+  if (category.startsWith("Dar Salud")) {
+    return "Dar Salud";
+  }
+  return category;
 }
 
 /**

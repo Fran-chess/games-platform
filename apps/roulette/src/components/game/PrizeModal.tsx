@@ -184,32 +184,43 @@ export default function PrizeModal() {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <Button
               onClick={handleReturnToRoulette}
-              variant="primary"
+              variant="custom"
               className="
-                font-bold bg-gradient-to-r from-blue-600 to-blue-500
-                hover:from-blue-700 hover:to-blue-600 text-white
-                transition-all transform hover:scale-105 shadow-xl
-                rounded-full px-8 py-4 text-lg
+                font-bold
+                bg-gradient-to-r from-blue-500 to-blue-600
+                text-white
+                shadow-[0_8px_30px_rgba(59,130,246,0.5)]
+                border-4 border-blue-300
+                rounded-2xl
+                px-8 py-4 text-lg
                 sm:px-10 sm:py-5 sm:text-xl
                 md:text-2xl
                 lg:px-12 lg:py-6 lg:text-3xl
                 xl:px-14 xl:py-7 xl:text-4xl
+                active:scale-95 active:shadow-[0_4px_15px_rgba(59,130,246,0.3)]
+                transition-transform duration-100
               "
             >
               Jugar de Nuevo
             </Button>
-            
+
             <Button
               onClick={handleReturnToStart}
-              variant="secondary"
+              variant="custom"
               className="
-                font-bold bg-gray-700 hover:bg-gray-600 text-white
-                transition-all transform hover:scale-105 shadow-xl
-                rounded-full px-8 py-4 text-lg
+                font-bold
+                bg-gradient-to-r from-gray-500 to-gray-600
+                text-white
+                shadow-[0_8px_30px_rgba(107,114,128,0.5)]
+                border-4 border-gray-300
+                rounded-2xl
+                px-8 py-4 text-lg
                 sm:px-10 sm:py-5 sm:text-xl
                 md:text-2xl
                 lg:px-12 lg:py-6 lg:text-3xl
                 xl:px-14 xl:py-7 xl:text-4xl
+                active:scale-95 active:shadow-[0_4px_15px_rgba(107,114,128,0.3)]
+                transition-transform duration-100
               "
             >
               Volver al Inicio

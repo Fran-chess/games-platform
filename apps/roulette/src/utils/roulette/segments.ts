@@ -130,16 +130,16 @@ function getNextFixedColor(
 }
 
 /**
- * Agrupa las preguntas por categoría
+ * Agrupa las preguntas por categoría (sin normalizar para preservar las categorías originales)
  *
  * @param questions - Array de preguntas
- * @returns Objeto con preguntas agrupadas por categoría
+ * @returns Objeto con preguntas agrupadas por categoría original
  */
 export function groupQuestionsByCategory(questions: Question[]): Record<string, Question[]> {
   const grouped: Record<string, Question[]> = {};
 
   questions.forEach(question => {
-    const category = normalizeCategory(question.category);
+    const category = question.category; // NO normalizar aquí para mantener categorías separadas
 
     if (!grouped[category]) {
       grouped[category] = [];
@@ -152,7 +152,7 @@ export function groupQuestionsByCategory(questions: Question[]): Record<string, 
 
 /**
  * Crea los segmentos de la ruleta distribuyendo las categorías estratégicamente
- * Asegura que "Dar Salud" aparezca dos veces en posiciones no consecutivas
+ * Asegura que las categorías "Dar Salud" aparezcan dos veces en posiciones no consecutivas
  *
  * @param questions - Array de preguntas del juego
  * @returns Array de segmentos con colores asignados
@@ -163,10 +163,13 @@ export function createRouletteSegments(questions: Question[]): WheelSegment[] {
   const grouped = groupQuestionsByCategory(questions);
   const categories = Object.keys(grouped);
   const segments: SegmentWithoutColor[] = [];
+  const darSaludCategories: string[] = [];
 
-  // Agregar todas las categorías excepto "Dar Salud"
+  // Identificar categorías "Dar Salud" y categorías regulares
   categories.forEach(category => {
-    if (category !== "Dar Salud") {
+    if (category.startsWith("Dar Salud")) {
+      darSaludCategories.push(category);
+    } else {
       segments.push({
         text: category,
         questions: grouped[category]
@@ -174,9 +177,9 @@ export function createRouletteSegments(questions: Question[]): WheelSegment[] {
     }
   });
 
-  // Insertar "Dar Salud" estratégicamente si existe
-  if (grouped["Dar Salud"]) {
-    insertDarSaludSegments(segments, grouped["Dar Salud"]);
+  // Insertar segmentos "Dar Salud" estratégicamente
+  if (darSaludCategories.length > 0) {
+    insertDarSaludSegments(segments, grouped, darSaludCategories);
   }
 
   return assignColorsToSegments(segments);
@@ -184,31 +187,52 @@ export function createRouletteSegments(questions: Question[]): WheelSegment[] {
 
 /**
  * Inserta los segmentos de "Dar Salud" en posiciones estratégicas
+ * Cada segmento mantiene sus preguntas específicas pero se muestra como "Dar Salud"
  *
  * @param segments - Array de segmentos donde insertar
- * @param darSaludQuestions - Preguntas de la categoría "Dar Salud"
+ * @param grouped - Objeto con todas las preguntas agrupadas por categoría
+ * @param darSaludCategories - Array con los nombres de las categorías "Dar Salud"
  */
 function insertDarSaludSegments(
   segments: SegmentWithoutColor[],
-  darSaludQuestions: Question[]
+  grouped: Record<string, Question[]>,
+  darSaludCategories: string[]
 ): void {
-  const totalSegments = segments.length + 2;
+  const totalSegments = segments.length + darSaludCategories.length;
 
-  // Calcular posiciones óptimas (aproximadamente 1/3 y 2/3 del círculo)
-  const firstPosition = Math.floor(totalSegments / 3);
-  const secondPosition = Math.floor((totalSegments * 2) / 3);
+  // Si hay 2 o más categorías Dar Salud, distribuirlas estratégicamente
+  if (darSaludCategories.length >= 2) {
+    // Calcular posiciones óptimas (aproximadamente 1/3 y 2/3 del círculo)
+    const firstPosition = Math.floor(totalSegments / 3);
+    const secondPosition = Math.floor((totalSegments * 2) / 3);
 
-  // Insertar primer "Dar Salud"
-  segments.splice(firstPosition, 0, {
-    text: "Dar Salud",
-    questions: darSaludQuestions
-  });
+    // Insertar primer segmento "Dar Salud" con sus preguntas específicas
+    segments.splice(firstPosition, 0, {
+      text: normalizeCategory(darSaludCategories[0]), // "Dar Salud"
+      questions: grouped[darSaludCategories[0]]
+    });
 
-  // Insertar segundo "Dar Salud" (ajustando por la inserción previa)
-  segments.splice(secondPosition + 1, 0, {
-    text: "Dar Salud",
-    questions: darSaludQuestions
-  });
+    // Insertar segundo segmento "Dar Salud" con sus preguntas específicas
+    segments.splice(secondPosition + 1, 0, {
+      text: normalizeCategory(darSaludCategories[1]), // "Dar Salud"
+      questions: grouped[darSaludCategories[1]]
+    });
+
+    // Si hay más de 2, agregar al final
+    for (let i = 2; i < darSaludCategories.length; i++) {
+      segments.push({
+        text: normalizeCategory(darSaludCategories[i]),
+        questions: grouped[darSaludCategories[i]]
+      });
+    }
+  } else if (darSaludCategories.length === 1) {
+    // Si solo hay una, agregarla en posición estratégica
+    const position = Math.floor(totalSegments / 2);
+    segments.splice(position, 0, {
+      text: normalizeCategory(darSaludCategories[0]),
+      questions: grouped[darSaludCategories[0]]
+    });
+  }
 }
 
 /**

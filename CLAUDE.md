@@ -27,7 +27,16 @@ pnpm format  # Format all files with Prettier
 
 # Clean build artifacts
 pnpm clean  # Clean all build outputs and node_modules
+
+# Performance testing
+pnpm test:perf           # Run all performance tests (Playwright)
+pnpm test:perf:memotest  # Test only memotest
+pnpm test:perf:roulette  # Test only roulette
+pnpm test:perf:report    # View HTML report
+pnpm build:perf          # Build both games for production (required before testing)
 ```
+
+**📊 For complete performance testing documentation, see [PERFORMANCE_TESTING.md](./PERFORMANCE_TESTING.md)**
 
 ### App-specific commands (from apps/[app-name])
 ```bash
@@ -129,6 +138,13 @@ If a component is only used by one game, keep it in that game's `src/components/
 - Minimal shared packages reduce build complexity
 - Each game optimizes independently for its specific use case
 - Next.js optimizations (code splitting, image optimization) apply to all apps
+
+#### Performance Testing
+Both games have comprehensive performance testing with Playwright measuring FPS, memory usage, load times, and Core Web Vitals:
+- Run tests: `pnpm test:perf` (requires `pnpm build:perf` first)
+- View results: `benchmarks/PERFORMANCE_REPORT.md`
+- Current benchmarks: 60 FPS, <2s load times, 0 memory leaks
+- See [PERFORMANCE_TESTING.md](./PERFORMANCE_TESTING.md) for complete documentation
 
 ### Architecture Philosophy
 

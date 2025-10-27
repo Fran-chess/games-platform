@@ -182,16 +182,16 @@ export function drawSegmentText(
   let lines: string[] = [];
 
   // División específica para cada categoría
-  if (text === "Prevención") {
-    lines = ["Prevención"];
-  } else if (text === "Criterios clínicos") {
-    lines = ["Criterios", "clínicos"];
+  if (text === "Cuidar con empatía") {
+    lines = ["Cuidar con", "empatía"];
+  } else if (text === "Práctica profesional") {
+    lines = ["Práctica", "profesional"];
+  } else if (text === "Seguridad y bioseguridad") {
+    lines = ["Seguridad y", "bioseguridad"];
+  } else if (text === "Cuidado clínico") {
+    lines = ["Cuidado", "clínico"];
   } else if (text === "Dar Salud") {
     lines = ["Dar Salud"];  // Una sola línea
-  } else if (text === "Ética y derechos") {
-    lines = ["Ética y", "derechos"];
-  } else if (text === "Cuidado interdisciplinario") {
-    lines = ["Cuidado", "interdisciplinario"];
   } else {
     // Por defecto, cada palabra en su línea si hay 2 palabras
     if (words.length === 2) {
@@ -223,7 +223,12 @@ export function drawSegmentText(
     ctx.rotate(Math.PI);
 
     // Posicionar desde el borde hacia el centro
-    const startX = -radius * 0.75;
+    // Ajustar posición específica para categorías con texto largo
+    let startX = -radius * 0.75;
+    if (text === "Cuidado interdisciplinario" || text === "Seguridad y bioseguridad") {
+      startX = -radius * 0.80; // Más alejado del centro en el lado izquierdo
+    }
+
     const startY = -totalHeight / 2 + lineHeight / 2;
 
     lines.forEach((line, index) => {
@@ -232,9 +237,9 @@ export function drawSegmentText(
     });
   } else {
     // Para la mitad derecha, texto normal
-    // Ajustar posición específica para "Cuidado interdisciplinario"
+    // Ajustar posición específica para categorías con texto largo
     let startX = radius * 0.35;
-    if (text === "Cuidado interdisciplinario") {
+    if (text === "Cuidado interdisciplinario" || text === "Seguridad y bioseguridad") {
       startX = radius * 0.42; // Más alejado del centro
     }
 
