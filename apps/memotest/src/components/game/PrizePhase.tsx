@@ -1,16 +1,18 @@
 /**
  * PrizePhase Component - Optimizado
- * Confetti controlado + Animaciones livianas
+ * Confetti controlado + Animaciones celebratorias + Exit coordinado
  * @module PrizePhase
  */
 
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { usePrizeCards, useMemoStore } from '@/store/memoStore';
 import { MassiveConfetti } from '@games-platform/ui';
 import { useMemoAudio } from '@/hooks/useMemoAudio';
+import { useDeviceCapabilities } from '@/hooks/useDeviceCapabilities';
+import { phaseTransitionCelebration, phaseTransitionReduced } from '@/utils/transitions';
 
 export function PrizePhase() {
   const prizeCards = usePrizeCards();
@@ -24,10 +26,13 @@ export function PrizePhase() {
   const selectedCard = prizeCards.find(c => c.id === selectedCardId);
   const { playPrizeSelect, playPrizeWin } = useMemoAudio();
 
-  // Detectar prefers-reduced-motion
-  const prefersReducedMotion = useMemo(() =>
-    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  , []);
+  const prefersReducedMotion = useReducedMotion();
+  const { shouldReduceEffects } = useDeviceCapabilities();
+
+  // Transición celebratoria para victoria (o reducida si es necesario)
+  const transition = (prefersReducedMotion || shouldReduceEffects)
+    ? phaseTransitionReduced
+    : phaseTransitionCelebration;
 
   const handleCardClick = useCallback((cardId: string) => {
     if (selectedCardId) return;
@@ -71,7 +76,14 @@ export function PrizePhase() {
   }, []);
 
   return (
-    <div className="h-screen p-8 lg:p-12 flex flex-col items-center justify-center relative overflow-hidden">
+    <motion.div
+      className="h-screen p-8 lg:p-12 flex flex-col items-center justify-center relative overflow-hidden"
+      initial={{ opacity: 0, scale: 1.05 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      transition={transition}
+      layout={false}
+    >
       {/* Fondo con overlay optimizado */}
       <div className="absolute inset-0 bg-black/40" />
 
@@ -329,6 +341,6 @@ export function PrizePhase() {
           />
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

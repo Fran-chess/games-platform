@@ -1,15 +1,18 @@
 /**
  * DefeatModal Component
- * Modal que se muestra cuando el jugador pierde (sin movimientos o sin tiempo)
+ * Modal renderizado en portal con blur optimizado
  * @module DefeatModal
  */
 
 'use client';
 
-import { useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useStats, useMemoStore } from '@/store/memoStore';
 import { memoService } from '@/services/game/memoService';
+import { useDeviceCapabilities } from '@/hooks/useDeviceCapabilities';
+import { phaseTransition, phaseTransitionReduced } from '@/utils/transitions';
 
 interface DefeatModalProps {
   reason?: 'max_moves' | 'time_up';
@@ -20,6 +23,20 @@ export function DefeatModal({ reason = 'max_moves' }: DefeatModalProps) {
   const { resetGame } = useMemoStore();
 
   const config = memoService.getConfig();
+  const prefersReducedMotion = useReducedMotion();
+  const { shouldReduceEffects } = useDeviceCapabilities();
+  const [mounted, setMounted] = useState(false);
+
+  // Asegurar que el portal solo se renderiza en el cliente
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  // Seleccionar transición según device capabilities
+  const transition = (prefersReducedMotion || shouldReduceEffects)
+    ? phaseTransitionReduced
+    : phaseTransition;
 
   const handlePlayAgain = useCallback(() => {
     // Reiniciar el juego desde el principio (volver a mezclar)
@@ -49,33 +66,34 @@ export function DefeatModal({ reason = 'max_moves' }: DefeatModalProps) {
 
   const message = getMessage();
 
-  return (
+  // No renderizar en SSR
+  if (!mounted) return null;
+
+  const modalContent = (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center p-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={transition}
     >
-      {/* Backdrop */}
+      {/* Backdrop - UN SOLO blur optimizado */}
       <motion.div
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        transition={transition}
       />
 
-      {/* Card glass principal - Mismo estilo que PrizePhase */}
+      {/* Card principal - SIN blur adicional */}
       <motion.div
-        className="relative bg-white/15 backdrop-blur-xl rounded-3xl shadow-[0_12px_48px_rgba(6,182,212,0.3)] p-12 max-w-3xl w-full border-2 border-white/30 overflow-hidden"
-        initial={{ scale: 0.8, y: 50 }}
+        className="relative bg-white/15 rounded-3xl shadow-[0_12px_48px_rgba(6,182,212,0.3)] p-12 max-w-3xl w-full ring-2 ring-white/30 overflow-hidden"
+        initial={{ scale: 0.9, y: 30 }}
         animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.8, y: 50 }}
-        transition={{
-          type: 'spring',
-          stiffness: 200,
-          damping: 20
-        }}
+        exit={{ scale: 0.9, y: 30 }}
+        transition={transition}
+        layout={false}
       >
         {/* Brillo superior */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-transparent pointer-events-none rounded-3xl" />
@@ -136,7 +154,7 @@ export function DefeatModal({ reason = 'max_moves' }: DefeatModalProps) {
             {/* Botón secundario - Volver al inicio */}
             <motion.button
               onClick={handleBackToStart}
-              className="bg-transparent text-white px-10 py-4 rounded-2xl text-xl font-bold border-2 border-white/60 hover:bg-white/10 min-h-[60px] flex-1 max-w-xs backdrop-blur-sm"
+              className="bg-transparent text-white px-10 py-4 rounded-2xl text-xl font-bold border-2 border-white/60 hover:bg-white/10 min-h-[60px] flex-1 max-w-xs"
               whileTap={{ scale: 0.96 }}
               whileHover={{
                 scale: 1.02,
@@ -152,4 +170,6 @@ export function DefeatModal({ reason = 'max_moves' }: DefeatModalProps) {
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 }

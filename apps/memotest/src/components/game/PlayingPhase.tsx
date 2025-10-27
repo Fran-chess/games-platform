@@ -1,18 +1,19 @@
 /**
  * PlayingPhase Component - Ultra-optimizado
- * HUD memoizado + Grid desacoplado del timer + CSS animations
+ * HUD memoizado + Grid desacoplado del timer + Exit coordinado
  * @module PlayingPhase
  */
 
 'use client';
 
 import { useEffect, useCallback, useMemo, memo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { CardsGrid } from './CardsGrid';
 import { useMovesUsed, useMatchesFound, useTimeLeft, useMemoStore } from '@/store/memoStore';
 import { memoService } from '@/services/game/memoService';
 import { useMemoAudio } from '@/hooks/useMemoAudio';
 import { useDeviceCapabilities } from '@/hooks/useDeviceCapabilities';
+import { phaseTransition, phaseTransitionReduced } from '@/utils/transitions';
 
 /**
  * HUD aislado y memoizado - Solo re-renderiza cuando cambian stats o tiempo
@@ -113,6 +114,13 @@ export function PlayingPhase() {
   const { flipCard, startClock, stopClock, setAudioCallbacks } = useMemoStore();
 
   const { playFlip, playMatch, playError, playTick } = useMemoAudio();
+  const prefersReducedMotion = useReducedMotion();
+  const { shouldReduceEffects } = useDeviceCapabilities();
+
+  // Seleccionar transición según device capabilities
+  const transition = (prefersReducedMotion || shouldReduceEffects)
+    ? phaseTransitionReduced
+    : phaseTransition;
 
   // Inyectar callbacks de audio al montar, iniciar clock
   useEffect(() => {
@@ -135,13 +143,20 @@ export function PlayingPhase() {
   }, [flipCard, playFlip]);
 
   return (
-    <div className="h-screen p-8 lg:p-12 flex flex-col">
+    <motion.div
+      className="h-screen p-8 lg:p-12 flex flex-col"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -16 }}
+      transition={transition}
+      layout={false}
+    >
       {/* HUD aislado y memoizado - Re-renders NO se propagan al grid */}
       <GameHUD timeLeft={timeLeft} />
 
       {/* Grid de cartas - Completamente aislado, NO observa timer ni stats */}
       <GridWrapper onCardClick={handleCardClick} />
-    </div>
+    </motion.div>
   );
 }
 
@@ -154,13 +169,8 @@ const GridWrapper = memo(function GridWrapper({
   onCardClick: (cardId: string) => void
 }) {
   return (
-    <motion.div
-      className="max-w-[92vw] mx-auto flex-1 flex items-center justify-center w-full"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
-    >
+    <div className="max-w-[92vw] mx-auto flex-1 flex items-center justify-center w-full">
       <CardsGrid onCardClick={onCardClick} />
-    </motion.div>
+    </div>
   );
 });

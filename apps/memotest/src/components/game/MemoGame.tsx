@@ -57,7 +57,7 @@ export function MemoGame() {
 
   return (
     <div className="relative min-h-screen w-screen overflow-hidden">
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync" initial={false}>
         {/* Fase de shuffling y memorización */}
         {(gameState === 'shuffling' || gameState === 'memorizing') && (
           <MemorizationPhase key="memorization" />

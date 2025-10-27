@@ -1,16 +1,18 @@
 /**
  * MemorizationPhase Component - Optimizado
- * Animaciones livianas + Timer optimizado
+ * Animaciones livianas + Timer optimizado + Exit coordinado
  * @module MemorizationPhase
  */
 
 'use client';
 
 import { useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { MemoCard } from './MemoCard';
 import { useCardOrder, useTimeLeft, useMemorizationPhase, useMemoStore } from '@/store/memoStore';
 import { memoService } from '@/services/game/memoService';
+import { useDeviceCapabilities } from '@/hooks/useDeviceCapabilities';
+import { phaseTransition, phaseTransitionReduced } from '@/utils/transitions';
 
 export function MemorizationPhase() {
   const cardOrder = useCardOrder();
@@ -19,6 +21,13 @@ export function MemorizationPhase() {
   const { transitionToMemorizing } = useMemoStore();
 
   const config = memoService.getConfig();
+  const prefersReducedMotion = useReducedMotion();
+  const { shouldReduceEffects } = useDeviceCapabilities();
+
+  // Seleccionar transición según device capabilities
+  const transition = (prefersReducedMotion || shouldReduceEffects)
+    ? phaseTransitionReduced
+    : phaseTransition;
 
   // Iniciar state machine al montar
   useEffect(() => {
@@ -30,7 +39,14 @@ export function MemorizationPhase() {
   }, []);
 
   return (
-    <div className="h-screen p-8 lg:p-12 flex flex-col">
+    <motion.div
+      className="h-screen p-8 lg:p-12 flex flex-col"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      transition={transition}
+      layout={false}
+    >
       {/* Header HUD compacto */}
       <div className="max-w-[92vw] mx-auto mb-3 w-full">
         <div className="relative bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg p-4 md:p-5 border border-cyan-400/30 overflow-hidden">
@@ -100,12 +116,7 @@ export function MemorizationPhase() {
       </div>
 
       {/* Grid de cartas optimizado */}
-      <motion.div
-        className="max-w-[92vw] mx-auto flex-1 flex items-center justify-center w-full"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
-      >
+      <div className="max-w-[92vw] mx-auto flex-1 flex items-center justify-center w-full">
         <div
           className="grid grid-cols-6 grid-rows-2 auto-rows-fr gap-x-6 gap-y-8 md:gap-x-8 md:gap-y-10 w-full place-items-center transform-gpu"
           style={{ contain: 'layout paint style' }}
@@ -124,7 +135,7 @@ export function MemorizationPhase() {
             </div>
           ))}
         </div>
-      </motion.div>
-    </div>
+      </div>
+    </motion.div>
   );
 }
