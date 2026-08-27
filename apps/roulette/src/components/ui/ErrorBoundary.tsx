@@ -1,4 +1,6 @@
-// [modificación] Error Boundary especializado para problemas de DOM y SSR
+'use client';
+
+// Error Boundary global: captura errores de render y ofrece recuperación
 import React, { Component, ReactNode } from 'react';
 
 interface Props {

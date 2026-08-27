@@ -1,143 +1,96 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guía para Claude Code al trabajar en `apps/roulette` (ruleta de preguntas DarSalud).
 
-## Development Commands
+## Comandos
 
-### Essential Commands
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run linting
-- `npm run test` - Run tests (compiles TypeScript first, then runs Node.js tests)
+Desde la raíz del monorepo:
 
-### Test Commands
-- `npm run test:build` - Compile TypeScript test files to `dist_test/` directory
-- `npm run test` - Full test suite (build + run tests)
-- Run single test: `node --test dist_test/tests/[filename].test.js` (after test:build)
-- Test configuration: `tsconfig.test.json` compiles to CommonJS for Node.js testing
-
-## Project Architecture
-
-### Technology Stack
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript (strict mode)
-- **Database**: Supabase (PostgreSQL with realtime subscriptions)
-- **State Management**: Zustand
-- **Styling**: Tailwind CSS v4 with PostCSS
-- **Animations**: Framer Motion
-- **Data Fetching**: TanStack Query (React Query v5)
-- **Icons**: Heroicons, React Icons
-- **Excel Export**: xlsx library
-
-### Core Application Structure
-
-This is a **multi-screen roulette game system** with three main interfaces:
-
-1. **Admin Panel** (`/admin`) - Game management and session control
-2. **Tablet Interface** (`/game/[sessionId]`) - Player interaction with roulette wheel
-3. **TV Display** (`/tv`) - Real-time game visualization for audience
-
-### Key Components Architecture
-
-#### State Management (Zustand Stores)
-- `src/store/gameStore.ts` - Main game state, participants, questions, admin operations
-- `src/store/sessionStore.ts` - Authentication and session management
-- `src/store/navigationStore.ts` - Navigation and UI state
-
-#### Database Schema (Supabase)
-- `participants` - Player registration and status (indexed on session_id, status, created_at)
-- `game_sessions` (PlaySession) - Individual game sessions (indexed on status, admin_id)
-- `plays` - Game plays and results
-- **Setup Scripts**: `scripts/setup-production-db.sql` (indexes & RLS policies)
-- **Test Data**: `scripts/generate-test-participants.sql`
-
-#### Realtime System
-- TV screen uses **dual realtime subscriptions** to prevent race conditions:
-  - `game_sessions` table for session updates
-  - `participants` table for immediate participant detection
-- Optimized logging system with different levels for development vs production
-
-#### API Routes Structure
-- `src/app/api/admin/` - Admin management endpoints
-  - `sessions/` - Session CRUD operations (create, list, active, close, finish)
-  - `sessions/queue/` - Queue management for participants
-  - `sessions/register-player/` - Admin-initiated player registration
-- `src/app/api/participants/` - Player registration and stats
-- `src/app/api/plays/` - Game play submission
-- `src/app/api/questions/` - Question management
-- `src/app/api/export-participants/` - Excel export functionality
-
-### Critical Implementation Details
-
-#### Supabase Client Configuration
-- **Client-side**: `supabaseClient` (anonymous access)
-- **Server-side**: `supabaseAdmin` (service role, API routes only)
-- Singleton pattern to prevent multiple instances
-- SSR protection for client initialization
-
-#### Game Flow
-1. Admin creates session via `/admin`
-2. Players register via `/register/[sessionId]`
-3. Game plays on `/game/[sessionId]` with roulette wheel
-4. TV displays live updates via `/tv`
-
-#### TV Optimization
-- Implements intelligent retry logic with exponential backoff
-- Dual realtime subscriptions eliminate race conditions
-- Smart logging system (`tvLogger` for dev, `tvProdLogger` for production)
-- Performance monitoring with sub-200ms response times
-
-### Common Patterns
-
-#### Error Handling
-- Use `tvLogger` for development debugging
-- Use `tvProdLogger` for production-critical errors only
-- Consistent error interfaces with `SupabaseError`
-
-#### Component Organization
-- `components/admin/` - Admin panel components
-- `components/game/` - Game interaction components
-- `components/tv/` - TV display components
-- `components/ui/` - Reusable UI components
-
-#### Data Flow
-- Zustand stores manage global state
-- API routes handle database operations
-- Realtime subscriptions provide live updates
-- TypeScript interfaces in `src/types/index.ts` define all data structures
-
-### Performance Considerations
-
-#### Production Optimizations
-- Logging level set to 'error' in production
-- Realtime subscriptions optimized for high concurrency
-- Database indexes on `session_id` and `status` fields
-- Minimal polling, maximum realtime event usage
-
-#### Development Features
-- Comprehensive debug logging
-- Hot reload with Next.js dev server
-- TypeScript strict mode enabled
-- Path aliases configured (`@/*` maps to `src/*`)
-
-## Important Notes
-
-- This is a **Spanish-language application** for DarSalud events
-- Uses Progressive Web App (PWA) configuration for tablet use
-- Implements Row Level Security (RLS) on Supabase tables
-- TV display optimized for large screens and audience viewing
-- Game supports both individual and session-based play modes
-- Questions loaded from `src/data/questions.json` with medical specialties
-- Queue system manages participant flow with "waiting", "playing", "completed" states
-
-## Environment Variables Required
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-NODE_ENV=production
-NEXT_PUBLIC_ENABLE_TV_DEBUG=false
-NEXT_PUBLIC_TV_LOG_LEVEL=error
+```bash
+pnpm dev:roulette                                # Dev server en http://localhost:3000
+pnpm build --filter=@games-platform/roulette     # Build de producción
+pnpm --filter @games-platform/roulette type-check
+pnpm build:perf && pnpm test:perf:roulette       # Benchmarks Playwright (FPS, memoria, carga)
 ```
+
+No hay tests unitarios ni configuración de ESLint en esta app (`pnpm lint` pide crearla).
+No requiere variables de entorno. Opcional: `NEXT_PUBLIC_ENABLE_PERF_MONITORING=true` para
+loguear Core Web Vitals en producción (`PerformanceMonitor`).
+
+## Qué es
+
+Una única página (`src/app/page.tsx`) que funciona como máquina de estados, pensada para una
+tablet en vertical durante eventos presenciales:
+
+```
+waiting  →  roulette  →  question  →  prize  →  (roulette | waiting)
+video LED   girar rueda   30 s timer   resultado
+```
+
+El estado global vive en Zustand (`src/store/gameStore.ts`); los tipos en `src/types/index.ts`.
+
+## Ruleta: arquitectura de render
+
+Diseñada para costo mínimo por frame (la tablet objetivo corre a 90 Hz):
+
+- **`src/utils/roulette/physics.ts`** — física del giro **basada en tiempo** (ms), no en frames.
+  El ganador se elige antes de girar (`pickWinnerIndex`, evita 3 repeticiones seguidas) y la
+  rueda se anima hasta dejarlo bajo el puntero (`createSpinPlan` / `getSpinFrame`). Duración
+  fija de 2400 ms, alineada con `public/sounds/wheel-spin.mp3` (2,42 s).
+- **`src/services/roulette/canvasRenderer.ts`** — dos capas pre-renderizadas al DPR del
+  dispositivo: `wheel` (segmentos + títulos, rota) y `overlay` (borde exterior y puntero).
+  Por frame solo se hace un `drawImage` rotado + resplandor del ganador + `drawImage`.
+  Los títulos se parten y reducen automáticamente para entrar en el segmento; el color de
+  texto lo decide el contraste WCAG contra el fondo (`utils/roulette/colors.ts`).
+- **`src/hooks/useRouletteLogic.ts`** — estado del giro en refs y un único loop de
+  `requestAnimationFrame` fuera del ciclo de React. Expone `phase`
+  (`idle | spinning | resolved`) y publica el ganador en el store al terminar. Tras
+  `resolved` no se puede volver a girar: la página cambia de vista y la ruleta se remonta.
+- **`src/components/game/RouletteWheel.tsx`** — canvas, capas, `ResizeObserver` y el botón
+  central **GIRAR**, que es un `<button>` del DOM superpuesto (no se dibuja en el canvas).
+  Su diámetro llega por la variable CSS `--spin-button-size`, fijada desde la misma
+  geometría del canvas; los estilos y estados viven en `.spin-button` (`globals.css`).
+
+Reglas:
+- Nada que se ejecute por frame debe crear gradientes, medir texto ni usar `shadowBlur`.
+- En reposo el loop de rAF está apagado. Cualquier animación "idle" va por CSS
+  (`transform`/`opacity`) en el DOM, nunca dentro del canvas.
+- Es táctil puro: sin hover. El estado presionado se maneja con `pointerdown/up/cancel/leave`
+  (iOS no aplica `:active` en touch) y `navigator.vibrate` no existe en iOS, así que el
+  feedback visual no depende de la vibración.
+- Solo el botón central es zona activa (disco + 15 px de margen). La rueda no recibe toques:
+  también es pantalla de resultado y un giro accidental quema una pregunta.
+
+## Preguntas y categorías
+
+- `src/data/questions.json`: cada pregunta tiene `id`, `category`, `text`, 4 `options`
+  (exactamente una `correct: true`) y `explanation` (se muestra al responder mal).
+- Cada `category` distinta es un segmento, en el orden en que aparece en el JSON. Los colores
+  por categoría están en `CATEGORY_COLOR_MAP` (`utils/roulette/colors.ts`); vecinos no deben
+  repetir color.
+- El material fuente del evento (PDF de preguntas) va en `apps/roulette/material/` y las
+  capturas en `apps/roulette/imagenes-captura/`; ambas carpetas están en `.gitignore`.
+- Las respuestas correctas se transcriben **exactamente** como las marca el material del
+  cliente; ante una duda se avisa, no se corrige.
+
+## Dispositivo objetivo y PWA
+
+- Lenovo Tab M11 en vertical: viewport CSS ≈ 800×1280, DPR 1.5, 90 Hz. Para previsualizar en
+  PC: DevTools, dispositivo 800×1280, DPR 1.5.
+- `public/manifest.json` la hace instalable (fullscreen, portrait). **No hay service worker**:
+  cada apertura carga desde la red; tras un deploy basta cerrar y reabrir la app instalada.
+
+## Estilos
+
+- Tailwind **v4** vía `@tailwindcss/postcss`, sin archivo de configuración (v4 autodetecta el
+  contenido; la config JS anterior estaba inerte y se eliminó). Tipografía: la sans por
+  defecto de Tailwind; la marca decidió no usar la fuente Marine.
+- `src/app/globals.css` contiene los resets en `@layer base` y el fondo `.bg-game-gradient`.
+- Cualquier CSS global fuera de `@layer` gana sobre las utilidades de Tailwind: no agregar
+  reglas de elemento (`button {}`, etc.) sin capa.
+
+## Convenciones
+
+- Español en comentarios y textos de UI.
+- Sin código muerto: exportar solo lo que se usa; borrar helpers huérfanos.
+- Cambios de layout se validan en el viewport de la tablet (el timer no debe pisar el logo).

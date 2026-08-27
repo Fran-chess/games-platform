@@ -7,33 +7,25 @@ export {
   ROULETTE_COLORS,
   AVAILABLE_COLORS,
   CATEGORY_COLOR_MAP,
+  SEGMENT_TEXT_COLORS,
   getContrastColor,
-  normalizeCategory,
   getCategoryColor,
 } from './colors';
 
 // Segmentos
-export {
-  type WheelSegment,
-  assignColorsToSegments,
-  groupQuestionsByCategory,
-  createRouletteSegments,
-  validateSegments,
-} from './segments';
+export { createRouletteSegments } from './segments';
 
 // Física
 export {
-  PHYSICS_CONFIG,
-  SOUND_CONFIG,
-  type SpinState,
-  customEasingFunction,
-  calculateInitialVelocity,
-  calculateTargetAngle,
-  calculateSpinDuration,
-  updateSpinState,
-  shouldPlayTick,
+  SPIN_CONFIG,
+  WINNER_GLOW_CONFIG,
+  type SpinPlan,
+  type SpinFrame,
+  normalizeAngle,
+  pickWinnerIndex,
+  createSpinPlan,
+  getSpinFrame,
+  getWinnerGlowIntensity,
   calculateWinningSegment,
   triggerVibration,
-  createAudioContext,
-  playTickSound,
 } from './physics';

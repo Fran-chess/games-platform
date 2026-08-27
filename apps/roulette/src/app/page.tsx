@@ -12,8 +12,7 @@ import WaitingScreen from "@/components/tv/screens/WaitingScreen";
 export default function GamePage() {
   // Estado local
   const [isLoading, setIsLoading] = useState(true);
-  const [isSpinning, setIsSpinning] = useState(false);
-  
+
   // Refs para evitar requests múltiples
   const loadingQuestionsRef = useRef(false);
   
@@ -66,34 +65,20 @@ export default function GamePage() {
   
   // Al girar la ruleta, mostrar una pregunta aleatoria del segmento ganador
   useEffect(() => {
-    if (lastSpinSegment && lastSpinSegment.questions && lastSpinSegment.questions.length > 0) {
-      // Seleccionar una pregunta aleatoria del segmento ganador
-      const segmentQuestions = lastSpinSegment.questions;
-      const randomIndex = Math.floor(Math.random() * segmentQuestions.length);
-      const questionToSet = segmentQuestions[randomIndex];
+    if (!lastSpinSegment || lastSpinSegment.questions.length === 0) return;
 
-      // Añadir un delay para una transición más suave
-      setTimeout(() => {
-        setCurrentQuestionRef.current(questionToSet);
-        setGameStateRef.current("question");
-      }, 800); // 800ms de delay para transición suave
-    }
+    const segmentQuestions = lastSpinSegment.questions;
+    const questionToSet = segmentQuestions[Math.floor(Math.random() * segmentQuestions.length)];
+
+    // Delay para que se vea el resplandor del segmento ganador antes de la transición
+    const timer = setTimeout(() => {
+      setCurrentQuestionRef.current(questionToSet);
+      setGameStateRef.current("question");
+    }, 800);
+
+    return () => clearTimeout(timer);
   }, [lastSpinSegment]);
-  
-  // Referencia al componente de la ruleta
-  const rouletteRef = useRef<{ spin: () => void }>(null);
-  
-  const handleSpin = () => {
-    if (rouletteRef.current && !isSpinning) {
-      rouletteRef.current.spin();
-    }
-  };
-  
-  // Función para manejar el cambio de estado del spinning
-  const handleSpinStateChange = (spinning: boolean) => {
-    setIsSpinning(spinning);
-  };
-  
+
   // Loading
   if (isLoading) {
     return (
@@ -115,7 +100,7 @@ export default function GamePage() {
     return <WaitingScreen />;
   }
   
-  // Vista de la ruleta - Sin botón inferior, solo el central
+  // Vista de la ruleta: el giro se dispara desde el botón central del propio componente
   if (gameState === "roulette") {
     return (
       <RouletteLayout>
@@ -126,13 +111,7 @@ export default function GamePage() {
           transition={{ duration: 0.5 }}
           className="w-full h-full"
         >
-          <RouletteWheel
-            questions={questions}
-            ref={rouletteRef}
-            onSpinStateChange={handleSpinStateChange}
-            onCenterButtonClick={handleSpin}
-            isSpinning={isSpinning}
-          />
+          <RouletteWheel questions={questions} />
         </motion.div>
       </RouletteLayout>
     );

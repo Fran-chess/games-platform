@@ -6,8 +6,9 @@ import {
   CheckCircleIcon,
   XCircleIcon,
 } from "@heroicons/react/24/solid";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { MassiveConfetti } from "@games-platform/ui";
+import { useWindowSize } from "@/hooks/useWindowSize";
 
 export default function PrizeModal() {
   const setGameState = useGameStore((state) => state.setGameState);
@@ -15,31 +16,23 @@ export default function PrizeModal() {
   const resetPrizeFeedback = useGameStore((state) => state.resetPrizeFeedback);
   const setCurrentQuestion = useGameStore((state) => state.setCurrentQuestion);
   const setLastSpinResultIndex = useGameStore((state) => state.setLastSpinResultIndex);
+  const setLastSpinSegment = useGameStore((state) => state.setLastSpinSegment);
   const setShowConfetti = useGameStore((state) => state.setShowConfetti);
   const showConfetti = useGameStore((state) => state.showConfetti);
   const resetCurrentGame = useGameStore((state) => state.resetCurrentGame);
 
   const { answeredCorrectly, explanation, correctOption, prizeName } = prizeFeedback;
 
-  // Window size for confetti
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+  const windowSize = useWindowSize();
 
+  // Apagar el confetti al salir del modal
   useEffect(() => {
-    const updateWindowSize = () => {
-      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    };
-    
-    updateWindowSize();
-    window.addEventListener('resize', updateWindowSize);
-    
-    return () => {
-      window.removeEventListener('resize', updateWindowSize);
-      setShowConfetti(false);
-    };
+    return () => setShowConfetti(false);
   }, [setShowConfetti]);
 
   const handleReturnToRoulette = () => {
     setLastSpinResultIndex(null);
+    setLastSpinSegment(null);
     setCurrentQuestion(null);
     resetPrizeFeedback();
     setShowConfetti(false);

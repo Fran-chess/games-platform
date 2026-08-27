@@ -1,7 +1,7 @@
 {
   "name": "Ruleta DarSalud",
-  "short_name": "Ruleta",
-  "description": "Ruleta interactiva con preguntas médicas para tablets - DarSalud Congreso de Enfermería",
+  "short_name": "Ruleta DarSalud",
+  "description": "Ruleta interactiva con preguntas para tablets - DarSalud",
   "start_url": "/",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],

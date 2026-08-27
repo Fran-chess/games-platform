@@ -1,249 +1,203 @@
 /**
- * Física y animación de la ruleta
- * Maneja el comportamiento del giro, velocidad y desaceleración
+ * Física del giro de la ruleta
+ *
+ * Modelo basado en tiempo real (milisegundos), independiente de la tasa de
+ * refresco del dispositivo: el giro dura lo mismo a 60 Hz, a 90 Hz o con
+ * frames perdidos. El segmento ganador se decide antes de girar y la rueda
+ * se anima hasta dejarlo bajo el puntero, así lo que se ve y la pregunta
+ * que se muestra nunca se contradicen.
  */
 
 /**
- * Configuración de física de la ruleta
+ * Configuración del giro
  */
-export const PHYSICS_CONFIG = {
-  /** Velocidad inicial mínima del giro (grados/frame) */
-  MIN_INITIAL_VELOCITY: 15,
-  /** Velocidad inicial máxima del giro (grados/frame) */
-  MAX_INITIAL_VELOCITY: 25,
-  /** Factor de desaceleración (fricción) */
-  DECELERATION_FACTOR: 0.985,
-  /** Velocidad mínima antes de detener (grados/frame) */
-  MIN_VELOCITY_THRESHOLD: 0.5,
-  /** Duración mínima del giro en frames */
-  MIN_SPIN_DURATION: 120,
-  /** Duración máxima del giro en frames */
-  MAX_SPIN_DURATION: 180,
-  /** FPS objetivo para la animación */
-  TARGET_FPS: 60,
+export const SPIN_CONFIG = {
+  /** Duración del giro en ms. Alineada con la duración del audio wheel-spin.mp3 (~2.4 s) */
+  DURATION_MS: 2400,
+  /** Vueltas completas mínimas antes de detenerse */
+  MIN_ROTATIONS: 3,
+  /** Vueltas completas máximas antes de detenerse */
+  MAX_ROTATIONS: 5,
+  /**
+   * Fracción del ancho del segmento (centrada) dentro de la cual puede caer el puntero.
+   * 0.6 → el puntero cae a ±30 % del centro del segmento, nunca sobre un borde.
+   */
+  LANDING_SPREAD: 0.6,
 } as const;
 
 /**
- * Configuración de sonido de la ruleta
+ * Configuración del resplandor del segmento ganador
  */
-export const SOUND_CONFIG = {
-  /** Volumen del tick */
-  TICK_VOLUME: 0.3,
-  /** Frecuencia del tick en Hz */
-  TICK_FREQUENCY: 800,
-  /** Duración del tick en ms */
-  TICK_DURATION: 20,
-  /** Velocidad mínima para reproducir sonido */
-  MIN_SOUND_VELOCITY: 2,
+export const WINNER_GLOW_CONFIG = {
+  /** Duración total (subida y bajada) en ms */
+  DURATION_MS: 700,
+  /** Intensidad máxima (0 a 1) */
+  MAX_INTENSITY: 0.6,
 } as const;
 
 /**
- * Estado del giro de la ruleta
+ * Plan de un giro: todo lo necesario para calcular el ángulo en cualquier instante
  */
-export interface SpinState {
-  isSpinning: boolean;
-  currentAngle: number;
-  velocity: number;
+export interface SpinPlan {
+  /** Marca de tiempo (performance.now) en la que empezó el giro */
+  startTime: number;
+  /** Ángulo de la rueda al iniciar, en grados */
+  startAngle: number;
+  /** Ángulo absoluto de llegada, en grados (incluye las vueltas completas) */
   targetAngle: number;
-  spinDuration: number;
-  elapsedFrames: number;
-  initialAngle?: number;
+  /** Duración del giro en ms */
+  durationMs: number;
+  /** Índice del segmento que quedará bajo el puntero */
+  winnerIndex: number;
 }
 
 /**
- * Función de easing personalizada para simular la física real de una ruleta
- * Combina aceleración inicial con desaceleración progresiva más suave
+ * Curva de velocidad del giro: ease-out cúbico.
+ * Arranca a velocidad máxima (como una rueda empujada) y frena de forma
+ * continua hasta detenerse, sin saltos de velocidad.
  *
- * @param t - Valor normalizado de tiempo (0 a 1)
- * @returns Valor de progreso con easing aplicado (0 a 1)
+ * @param t - Tiempo normalizado (0 a 1)
+ * @returns Progreso normalizado (0 a 1)
  */
-export function customEasingFunction(t: number): number {
-  if (t < 0.2) {
-    // Aceleración inicial más suave
-    return 5 * t * t;
-  } else if (t < 0.7) {
-    // Velocidad constante en el medio
-    return 0.2 + (t - 0.2) * 1.4;
-  } else {
-    // Desaceleración más gradual usando ease-out quint
-    const adjustedT = (t - 0.7) / 0.3; // Normalizar el último 30%
-    return 0.9 + 0.1 * (1 - Math.pow(1 - adjustedT, 5));
-  }
+function easeSpin(t: number): number {
+  const clamped = Math.min(1, Math.max(0, t));
+  return 1 - Math.pow(1 - clamped, 3);
 }
 
 /**
- * Calcula la velocidad inicial aleatoria para el giro
- *
- * @returns Velocidad inicial en grados por frame
+ * Normaliza un ángulo al rango [0, 360)
  */
-export function calculateInitialVelocity(): number {
-  const range = PHYSICS_CONFIG.MAX_INITIAL_VELOCITY - PHYSICS_CONFIG.MIN_INITIAL_VELOCITY;
-  return PHYSICS_CONFIG.MIN_INITIAL_VELOCITY + Math.random() * range;
+export function normalizeAngle(degrees: number): number {
+  const angle = degrees % 360;
+  return angle < 0 ? angle + 360 : angle;
 }
 
 /**
- * Calcula el ángulo de destino aleatorio para el giro de la ruleta
- * Opcionalmente puede apuntar a un segmento específico
+ * Ángulo de rueda (0 a 360) que deja el segmento indicado bajo el puntero superior.
+ * Es la operación inversa de `calculateWinningSegment`.
  *
- * @param minRotations - Número mínimo de rotaciones completas
- * @param maxRotations - Número máximo de rotaciones completas
- * @param targetSegmentIndex - Índice del segmento objetivo (opcional)
- * @param numSegments - Número total de segmentos (requerido si se especifica targetSegmentIndex)
- * @returns Ángulo de destino en grados
+ * @param segmentIndex - Índice del segmento objetivo
+ * @param numSegments - Cantidad total de segmentos
+ * @param spread - Fracción del ancho del segmento donde puede caer el puntero
  */
-export function calculateTargetAngle(
-  minRotations: number = 3,
-  maxRotations: number = 5,
-  targetSegmentIndex?: number,
-  numSegments?: number
+function angleForSegment(
+  segmentIndex: number,
+  numSegments: number,
+  spread: number = SPIN_CONFIG.LANDING_SPREAD
 ): number {
-  // Número de rotaciones completas aleatorias
-  const rotations = minRotations + Math.random() * (maxRotations - minRotations);
-
-  let finalAngle: number;
-
-  if (targetSegmentIndex !== undefined && numSegments !== undefined && numSegments > 0) {
-    // Si queremos apuntar a un segmento específico
-    const seg = 360 / numSegments;
-
-    // Centro del segmento objetivo
-    const center = (targetSegmentIndex + 0.5) * seg;
-
-    // Queremos que el centro del segmento llegue al marcador superior
-    // El marcador está arriba, así que necesitamos que el segmento rote hasta esa posición
-    finalAngle = 360 - center;
-
-    // Agregar un pequeño offset aleatorio para que no siempre caiga exactamente en el centro
-    const offset = (Math.random() - 0.5) * seg * 0.6; // ±30% del tamaño del segmento
-    finalAngle += offset;
-
-    // Normalizar a 0-360
-    finalAngle = finalAngle % 360;
-    if (finalAngle < 0) finalAngle += 360;
-  } else {
-    // Ángulo final completamente aleatorio (0-360 grados)
-    finalAngle = Math.random() * 360;
-  }
-
-  // Total: rotaciones completas + ángulo final
-  return rotations * 360 + finalAngle;
+  const segmentAngle = 360 / numSegments;
+  const segmentCenter = (segmentIndex + 0.5) * segmentAngle;
+  const offset = (Math.random() - 0.5) * segmentAngle * spread;
+  return normalizeAngle(360 - segmentCenter + offset);
 }
 
 /**
- * Calcula la duración del giro basada en el ángulo objetivo
+ * Elige el segmento ganador de forma aleatoria, evitando que el mismo
+ * segmento salga tres veces seguidas.
  *
- * @param targetAngle - Ángulo de destino en grados
- * @returns Duración en frames
+ * @param numSegments - Cantidad total de segmentos
+ * @param recentWinners - Índices ganadores recientes, del más antiguo al más reciente
  */
-export function calculateSpinDuration(targetAngle: number): number {
-  const normalizedAngle = targetAngle / 360;
-  const baseDuration = PHYSICS_CONFIG.MIN_SPIN_DURATION;
-  const variableDuration = (PHYSICS_CONFIG.MAX_SPIN_DURATION - PHYSICS_CONFIG.MIN_SPIN_DURATION) *
-    (normalizedAngle / 10); // Ajustar según las rotaciones
+export function pickWinnerIndex(numSegments: number, recentWinners: number[]): number {
+  const lastTwo = recentWinners.slice(-2);
+  const blockedIndex =
+    lastTwo.length === 2 && lastTwo[0] === lastTwo[1] ? lastTwo[0] : null;
 
-  return Math.min(
-    baseDuration + variableDuration,
-    PHYSICS_CONFIG.MAX_SPIN_DURATION
-  );
+  const candidates: number[] = [];
+  for (let index = 0; index < numSegments; index++) {
+    if (numSegments < 2 || index !== blockedIndex) candidates.push(index);
+  }
+
+  return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
 /**
- * Actualiza el estado del giro para el siguiente frame
+ * Crea el plan de un giro que termina con `winnerIndex` bajo el puntero
  *
- * @param state - Estado actual del giro
- * @returns Nuevo estado del giro
+ * @param startAngle - Ángulo actual de la rueda, en grados
+ * @param numSegments - Cantidad total de segmentos
+ * @param winnerIndex - Segmento que debe quedar bajo el puntero
+ * @param now - Marca de tiempo actual (performance.now)
  */
-export function updateSpinState(state: SpinState): SpinState {
-  if (!state.isSpinning) return state;
+export function createSpinPlan(
+  startAngle: number,
+  numSegments: number,
+  winnerIndex: number,
+  now: number
+): SpinPlan {
+  const landingAngle = angleForSegment(winnerIndex, numSegments);
 
-  const progress = state.elapsedFrames / state.spinDuration;
+  // Distancia hacia adelante desde la posición actual hasta el ángulo de llegada
+  let landingDelta = landingAngle - normalizeAngle(startAngle);
+  if (landingDelta < 0) landingDelta += 360;
 
-  if (progress >= 1) {
-    // Giro completado - normalizar ángulo final
-    const finalAngle = state.targetAngle % 360;
-    return {
-      ...state,
-      isSpinning: false,
-      currentAngle: finalAngle < 0 ? finalAngle + 360 : finalAngle,
-      velocity: 0,
-      elapsedFrames: 0,
-      initialAngle: undefined,
-    };
-  }
-
-  // Aplicar easing para obtener el ángulo actual
-  const easedProgress = customEasingFunction(progress);
-
-  // Usar el ángulo inicial guardado o el actual si es el primer frame
-  const initialAngle = state.initialAngle ?? state.currentAngle;
-  const totalRotation = state.targetAngle - initialAngle;
-
-  // Interpolación con easing
-  const newAngle = initialAngle + totalRotation * easedProgress;
-
-  // Calcular velocidad instantánea para efectos (como sonido)
-  const deltaAngle = newAngle - state.currentAngle;
-  const instantVelocity = Math.abs(deltaAngle);
+  const rotationRange = SPIN_CONFIG.MAX_ROTATIONS - SPIN_CONFIG.MIN_ROTATIONS + 1;
+  const fullRotations = SPIN_CONFIG.MIN_ROTATIONS + Math.floor(Math.random() * rotationRange);
 
   return {
-    ...state,
-    currentAngle: newAngle,
-    velocity: instantVelocity,
-    elapsedFrames: state.elapsedFrames + 1,
-    initialAngle: initialAngle,
+    startTime: now,
+    startAngle,
+    targetAngle: startAngle + fullRotations * 360 + landingDelta,
+    durationMs: SPIN_CONFIG.DURATION_MS,
+    winnerIndex,
   };
 }
 
 /**
- * Determina si se debe reproducir el sonido de tick
- *
- * @param velocity - Velocidad actual
- * @param segmentAngle - Ángulo de cada segmento
- * @param lastTickAngle - Ángulo del último tick
- * @param currentAngle - Ángulo actual
- * @returns true si se debe reproducir el tick
+ * Estado del giro en un instante dado
  */
-export function shouldPlayTick(
-  velocity: number,
-  segmentAngle: number,
-  lastTickAngle: number,
-  currentAngle: number
-): boolean {
-  if (velocity < SOUND_CONFIG.MIN_SOUND_VELOCITY) return false;
-
-  const anglesSinceLastTick = Math.abs(currentAngle - lastTickAngle);
-  return anglesSinceLastTick >= segmentAngle;
+export interface SpinFrame {
+  /** Ángulo de la rueda en grados (no normalizado) */
+  angle: number;
+  /** Progreso temporal (0 a 1) */
+  progress: number;
+  /** true cuando el giro terminó */
+  done: boolean;
 }
 
 /**
- * Calcula el segmento ganador basado en el ángulo final
- * La flecha está arriba (270° = -90° = -π/2), así que el segmento en esa posición es el ganador
+ * Calcula el ángulo de la rueda para un instante del giro
  *
- * @param finalAngleDeg - Ángulo final de la ruleta (en grados)
- * @param numSegments - Número total de segmentos
- * @returns Índice del segmento ganador (0-based)
+ * @param plan - Plan del giro
+ * @param now - Marca de tiempo actual (performance.now)
  */
-export function calculateWinningSegment(
-  finalAngleDeg: number,
-  numSegments: number
-): number {
+export function getSpinFrame(plan: SpinPlan, now: number): SpinFrame {
+  const progress = Math.min(1, Math.max(0, (now - plan.startTime) / plan.durationMs));
+  const angle = plan.startAngle + (plan.targetAngle - plan.startAngle) * easeSpin(progress);
+  return { angle, progress, done: progress >= 1 };
+}
+
+/**
+ * Intensidad del resplandor del ganador en un instante dado.
+ * Sube y baja con una curva senoidal para que el efecto no tenga cortes.
+ *
+ * @param elapsedMs - Milisegundos desde que terminó el giro
+ * @returns Intensidad (0 a MAX_INTENSITY); 0 cuando el efecto terminó
+ */
+export function getWinnerGlowIntensity(elapsedMs: number): number {
+  const t = elapsedMs / WINNER_GLOW_CONFIG.DURATION_MS;
+  if (t <= 0 || t >= 1) return 0;
+  return WINNER_GLOW_CONFIG.MAX_INTENSITY * Math.sin(Math.PI * t);
+}
+
+/**
+ * Calcula el segmento que queda bajo el puntero superior para un ángulo de rueda.
+ * Los segmentos se dibujan desde arriba (−90°) en sentido horario, y la rueda
+ * rota en sentido horario; el punto bajo el puntero es el que estaba a (360 − θ).
+ *
+ * @param angleDeg - Ángulo de la rueda en grados
+ * @param numSegments - Cantidad total de segmentos
+ * @returns Índice del segmento ganador, o -1 si no hay segmentos
+ */
+export function calculateWinningSegment(angleDeg: number, numSegments: number): number {
   if (numSegments <= 0) return -1;
 
-  const seg = 360 / numSegments;
+  const segmentAngle = 360 / numSegments;
+  const relative = normalizeAngle(360 - normalizeAngle(angleDeg));
 
-  // Normalizar ángulo (rueda) a 0..360
-  let theta = finalAngleDeg % 360;
-  if (theta < 0) theta += 360;
-
-  // Marcador arriba (−90° = 270°). Convertimos a "ángulo bajo el marcador".
-  // Cuando la ruleta gira, el segmento que estaba atrás ahora está adelante
-  const relative = (360 - theta) % 360;
-
-  // Pequeño epsilon para no caer en el sector vecino por flotantes
-  const EPS = 1e-6;
-  const idx = Math.floor((relative + EPS) / seg) % numSegments;
-
-  return idx < 0 ? idx + numSegments : idx;
+  // Epsilon para no caer en el sector vecino por errores de coma flotante
+  const EPSILON = 1e-6;
+  return Math.floor((relative + EPSILON) / segmentAngle) % numSegments;
 }
 
 /**
@@ -252,51 +206,7 @@ export function calculateWinningSegment(
  * @param pattern - Patrón de vibración en milisegundos
  */
 export function triggerVibration(pattern: number | number[] = 50): void {
-  if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     navigator.vibrate(pattern);
-  }
-}
-
-/**
- * Crea un contexto de audio para los efectos de sonido
- *
- * @returns AudioContext o null si no está disponible
- */
-export function createAudioContext(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
-
-  const AudioContextClass = window.AudioContext ||
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AudioContextClass) return null;
-
-  try {
-    return new AudioContextClass();
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Reproduce un sonido de tick usando Web Audio API
- *
- * @param audioContext - Contexto de audio
- */
-export function playTickSound(audioContext: AudioContext | null): void {
-  if (!audioContext) return;
-
-  try {
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.frequency.value = SOUND_CONFIG.TICK_FREQUENCY;
-    gainNode.gain.value = SOUND_CONFIG.TICK_VOLUME;
-
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + SOUND_CONFIG.TICK_DURATION / 1000);
-  } catch {
-    // Silenciar errores de audio
   }
 }

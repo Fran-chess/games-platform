@@ -1,295 +1,295 @@
 [
   {
-    "id": "emp1",
-    "category": "Cuidar con empatía",
-    "text": "¿Qué implica el cuidado humanizado en enfermería?",
+    "id": "aut1",
+    "category": "Autonomía",
+    "text": "¿Qué es el \"envejecimiento saludable\" según la definición de la OMS?",
     "options": [
-      { "text": "Aplicar técnicas de manera eficiente", "correct": false },
-      { "text": "Poner en el centro a la persona y su entorno", "correct": true },
-      { "text": "Priorizar la rapidez en la atención", "correct": false },
-      { "text": "Cumplir con los procedimientos establecidos", "correct": false }
+      { "text": "La ausencia total de enfermedades", "correct": false },
+      { "text": "El proceso de desarrollar y mantener la capacidad funcional que permite el bienestar en la vejez", "correct": true },
+      { "text": "Un estado exclusivo de personas sin discapacidad", "correct": false },
+      { "text": "Vivir el mayor número de años posible, sin importar la calidad de vida", "correct": false }
     ],
-    "explanation": "El cuidado humanizado en enfermería implica poner en el centro a la persona y su entorno, respetando su dignidad y considerando sus necesidades integrales."
+    "explanation": "La OMS define el envejecimiento saludable como el proceso de desarrollar y mantener la capacidad funcional que permite el bienestar en la vejez; no equivale a la ausencia de enfermedad."
   },
   {
-    "id": "emp2",
-    "category": "Cuidar con empatía",
-    "text": "¿Qué valor guía la práctica del cuidado humanizado?",
+    "id": "aut2",
+    "category": "Autonomía",
+    "text": "Según el modelo de envejecimiento activo de la OMS, ¿cuáles son sus tres pilares?",
     "options": [
-      { "text": "La eficacia", "correct": false },
-      { "text": "La obediencia", "correct": false },
-      { "text": "La dignidad humana", "correct": true },
-      { "text": "La rutina", "correct": false }
+      { "text": "Nutrición, ejercicio y sueño", "correct": false },
+      { "text": "Salud, vivienda y economía", "correct": false },
+      { "text": "Salud, seguridad y participación", "correct": true },
+      { "text": "Familia, trabajo y ocio", "correct": false }
     ],
-    "explanation": "La dignidad humana es el valor fundamental que guía la práctica del cuidado humanizado, reconociendo el respeto integral por cada persona."
+    "explanation": "El modelo de envejecimiento activo de la OMS se sostiene en tres pilares: salud, seguridad y participación."
   },
   {
-    "id": "emp3",
-    "category": "Cuidar con empatía",
-    "text": "¿Cuál de estas acciones refleja empatía profesional?",
+    "id": "aut3",
+    "category": "Autonomía",
+    "text": "¿Qué es la \"fragilidad\" (frailty) en geriatría?",
     "options": [
-      { "text": "Brindar cuidados considerando los valores y creencias del paciente", "correct": true },
-      { "text": "Evitar temas personales", "correct": false },
-      { "text": "Priorizar solo el criterio clínico", "correct": false },
-      { "text": "Derivar toda decisión al médico", "correct": false }
+      { "text": "Un sinónimo de vejez avanzada", "correct": false },
+      { "text": "Un síndrome clínico de vulnerabilidad fisiológica, con disminución de reserva y resistencia a estresores", "correct": true },
+      { "text": "Una enfermedad genética", "correct": false },
+      { "text": "La pérdida total de movilidad", "correct": false }
     ],
-    "explanation": "La empatía profesional se refleja al brindar cuidados considerando los valores y creencias del paciente, respetando su individualidad y contexto personal."
+    "explanation": "La fragilidad es un síndrome clínico de vulnerabilidad fisiológica en el que disminuyen la reserva y la resistencia frente a estresores. No es sinónimo de vejez avanzada ni de inmovilidad."
   },
   {
-    "id": "emp4",
-    "category": "Cuidar con empatía",
-    "text": "En cuidados domiciliarios, el profesional demuestra humanidad cuando:",
+    "id": "aut4",
+    "category": "Autonomía",
+    "text": "Desde un enfoque de cuidado centrado en la persona, ¿qué debería priorizarse al planificar el cuidado de alguien con dependencia?",
     "options": [
-      { "text": "Respeta la dinámica familiar y adapta su intervención", "correct": true },
-      { "text": "Reproduce la rutina hospitalaria", "correct": false },
-      { "text": "Limita la información", "correct": false },
-      { "text": "Mantiene distancia emocional", "correct": false }
+      { "text": "Exclusivamente protocolos estandarizados, al margen de la adaptación individual", "correct": false },
+      { "text": "El criterio del equipo de salud", "correct": false },
+      { "text": "La opinión de la familia por sobre todo", "correct": false },
+      { "text": "Las preferencias, valores e historia de vida de la persona, además de sus necesidades clínicas", "correct": true }
     ],
-    "explanation": "Demostrar humanidad en el domicilio implica respetar la dinámica familiar y adaptar la intervención al contexto particular de cada hogar."
-  },
-
-  {
-    "id": "prac1",
-    "category": "Práctica profesional",
-    "text": "¿Qué función cumple el registro de enfermería?",
-    "options": [
-      { "text": "Respaldar legalmente la práctica y garantizar continuidad de cuidados", "correct": true },
-      { "text": "Ser un trámite administrativo", "correct": false },
-      { "text": "Sustituir la observación clínica", "correct": false },
-      { "text": "Ser responsabilidad del médico", "correct": false }
-    ],
-    "explanation": "El registro de enfermería respalda legalmente la práctica profesional y garantiza la continuidad de los cuidados entre diferentes turnos y profesionales."
-  },
-  {
-    "id": "prac2",
-    "category": "Práctica profesional",
-    "text": "Según el rol profesional, ¿cuál de estas tareas es propia del enfermero/a?",
-    "options": [
-      { "text": "Diagnóstico médico", "correct": false },
-      { "text": "Valoración, planificación y evaluación del cuidado", "correct": true },
-      { "text": "Indicación farmacológica", "correct": false },
-      { "text": "Firma de altas hospitalarias", "correct": false }
-    ],
-    "explanation": "Las tareas propias del enfermero/a incluyen la valoración, planificación y evaluación del cuidado, que conforman el proceso de atención de enfermería."
-  },
-  {
-    "id": "prac3",
-    "category": "Práctica profesional",
-    "text": "En Argentina, ¿qué norma regula el ejercicio profesional de la enfermería?",
-    "options": [
-      { "text": "Ley Nacional 24.004", "correct": true },
-      { "text": "Ley 26.657", "correct": false },
-      { "text": "Decreto 142/90", "correct": false },
-      { "text": "Resolución 841/2010", "correct": false }
-    ],
-    "explanation": "La Ley Nacional 24.004 es la norma que regula el ejercicio profesional de la enfermería en Argentina, estableciendo las competencias y responsabilidades."
-  },
-  {
-    "id": "prac4",
-    "category": "Práctica profesional",
-    "text": "¿Qué elemento es esencial antes de administrar medicación?",
-    "options": [
-      { "text": "Verificar los cinco correctos: paciente, medicamento, dosis, vía y hora", "correct": true },
-      { "text": "Registrar después del turno", "correct": false },
-      { "text": "Confirmar solo la dosis", "correct": false },
-      { "text": "Consultar a otro colega", "correct": false }
-    ],
-    "explanation": "Antes de administrar medicación es esencial verificar los cinco correctos: paciente, medicamento, dosis, vía y hora para garantizar la seguridad del paciente."
+    "explanation": "El cuidado centrado en la persona prioriza sus preferencias, valores e historia de vida, integrándolos con sus necesidades clínicas."
   },
 
   {
-    "id": "seg1",
-    "category": "Seguridad y bioseguridad",
-    "text": "¿Cuál es la medida más eficaz para prevenir infecciones intrahospitalarias?",
+    "id": "mov1",
+    "category": "Movilidad",
+    "text": "¿Cuántos minutos semanales de actividad aeróbica moderada recomienda la OMS para personas mayores?",
     "options": [
-      { "text": "Uso de guantes estériles", "correct": false },
-      { "text": "Higiene de manos antes y después del contacto", "correct": true },
-      { "text": "Limpieza diaria del entorno", "correct": false },
-      { "text": "Ventilación del área de trabajo", "correct": false }
+      { "text": "60 minutos", "correct": false },
+      { "text": "150 minutos", "correct": true },
+      { "text": "300 minutos", "correct": false },
+      { "text": "30 minutos", "correct": false }
     ],
-    "explanation": "La higiene de manos antes y después del contacto con el paciente es la medida más eficaz para prevenir infecciones intrahospitalarias."
+    "explanation": "La OMS recomienda al menos 150 minutos semanales de actividad aeróbica de intensidad moderada para las personas mayores."
   },
   {
-    "id": "seg2",
-    "category": "Seguridad y bioseguridad",
-    "text": "¿Qué equipo de protección se utiliza para manipular fluidos biológicos?",
+    "id": "mov2",
+    "category": "Movilidad",
+    "text": "¿Qué tipo de ejercicio es más eficaz para prevenir caídas?",
     "options": [
-      { "text": "Solo guantes", "correct": false },
-      { "text": "Guantes, bata y protección ocular según riesgo", "correct": true },
-      { "text": "Mascarilla únicamente", "correct": false },
-      { "text": "Ninguno si se trata de pacientes conocidos", "correct": false }
+      { "text": "Solo ejercicio aeróbico", "correct": false },
+      { "text": "Entrenamiento combinado de equilibrio y fuerza", "correct": true },
+      { "text": "Estiramiento pasivo", "correct": false },
+      { "text": "Ejercicios respiratorios", "correct": false }
     ],
-    "explanation": "Para manipular fluidos biológicos se requiere guantes, bata y protección ocular según el nivel de riesgo, siguiendo las precauciones estándar de bioseguridad."
+    "explanation": "El entrenamiento combinado de equilibrio y fuerza es la intervención más eficaz para reducir el riesgo de caídas en personas mayores."
   },
   {
-    "id": "seg3",
-    "category": "Seguridad y bioseguridad",
-    "text": "En internación domiciliaria, ¿qué precaución es fundamental?",
+    "id": "mov3",
+    "category": "Movilidad",
+    "text": "¿Qué es la \"dinapenia\"?",
     "options": [
-      { "text": "Descartar residuos según normativa de residuos patogénicos", "correct": true },
-      { "text": "Reutilizar insumos limpios", "correct": false },
-      { "text": "No informar al paciente", "correct": false },
-      { "text": "Dejar materiales en el domicilio", "correct": false }
+      { "text": "Pérdida de masa ósea", "correct": false },
+      { "text": "Pérdida de fuerza muscular", "correct": true },
+      { "text": "Un tipo de arritmia cardíaca", "correct": false },
+      { "text": "La capacidad pulmonar", "correct": false }
     ],
-    "explanation": "En internación domiciliaria es fundamental descartar los residuos según la normativa de residuos patogénicos para prevenir riesgos sanitarios."
+    "explanation": "La dinapenia es la pérdida de fuerza muscular asociada a la edad. No debe confundirse con la pérdida de masa ósea."
   },
   {
-    "id": "seg4",
-    "category": "Seguridad y bioseguridad",
-    "text": "¿Cuál de las siguientes situaciones requiere lavado de manos inmediato?",
+    "id": "mov4",
+    "category": "Movilidad",
+    "text": "La sarcopenia se define principalmente como:",
     "options": [
-      { "text": "Antes de preparar medicación", "correct": true },
-      { "text": "Después de escribir en la historia clínica", "correct": false },
-      { "text": "Al ingresar al servicio", "correct": false },
-      { "text": "Solo cuando hay suciedad visible", "correct": false }
+      { "text": "Pérdida progresiva de masa y fuerza muscular", "correct": true },
+      { "text": "Pérdida de masa ósea", "correct": false },
+      { "text": "Deterioro cognitivo leve", "correct": false },
+      { "text": "Pérdida de tejido adiposo", "correct": false }
     ],
-    "explanation": "Se requiere lavado de manos inmediato antes de preparar medicación para prevenir contaminación y garantizar la seguridad del paciente."
-  },
-
-  {
-    "id": "clin1",
-    "category": "Cuidado clínico",
-    "text": "En un paciente con fiebre, el primer paso de enfermería es:",
-    "options": [
-      { "text": "Administrar antipirético sin orden médica", "correct": false },
-      { "text": "Controlar temperatura, frecuencia cardíaca y valorar causas", "correct": true },
-      { "text": "Aplicar compresas frías de inmediato", "correct": false },
-      { "text": "Derivar al médico sin evaluación", "correct": false }
-    ],
-    "explanation": "El primer paso ante un paciente con fiebre es controlar temperatura, frecuencia cardíaca y valorar las posibles causas antes de cualquier intervención."
-  },
-  {
-    "id": "clin2",
-    "category": "Cuidado clínico",
-    "text": "En una úlcera por presión, la acción prioritaria es:",
-    "options": [
-      { "text": "Cubrir con apósitos secos", "correct": false },
-      { "text": "Cambiar la posición del paciente y evaluar la piel", "correct": true },
-      { "text": "Aplicar antiséptico en exceso", "correct": false },
-      { "text": "Dejar la herida al aire", "correct": false }
-    ],
-    "explanation": "La acción prioritaria ante una úlcera por presión es cambiar la posición del paciente y evaluar el estado de la piel para prevenir mayor daño."
-  },
-  {
-    "id": "clin3",
-    "category": "Cuidado clínico",
-    "text": "En un paciente con oxigenoterapia, ¿qué precaución debe tenerse?",
-    "options": [
-      { "text": "Colocar alcohol cerca del equipo", "correct": false },
-      { "text": "Evitar el contacto del tubo con el piso", "correct": true },
-      { "text": "Descartar cánulas a diario sin control", "correct": false },
-      { "text": "Lubricar con aceite", "correct": false }
-    ],
-    "explanation": "En un paciente con oxigenoterapia se debe evitar el contacto del tubo con el piso para prevenir contaminación y mantener la higiene del sistema."
-  },
-  {
-    "id": "clin4",
-    "category": "Cuidado clínico",
-    "text": "¿Cuál es un signo de alarma en pacientes con EPOC?",
-    "options": [
-      { "text": "Tos seca nocturna", "correct": false },
-      { "text": "Dificultad respiratoria progresiva y cianosis", "correct": true },
-      { "text": "Pérdida de apetito leve", "correct": false },
-      { "text": "Dolor muscular", "correct": false }
-    ],
-    "explanation": "En pacientes con EPOC, la dificultad respiratoria progresiva y la cianosis son signos de alarma que requieren intervención inmediata."
+    "explanation": "La sarcopenia es la pérdida progresiva de masa y fuerza muscular asociada al envejecimiento, con impacto en la funcionalidad y el riesgo de caídas."
   },
 
   {
-    "id": "dar1_1",
-    "category": "Dar Salud I - Somos equipo profesional",
-    "text": "¿Qué distingue al modelo de atención de Dar Salud?",
+    "id": "ali1",
+    "category": "Alimentación",
+    "text": "¿Qué cambio fisiológico frecuente reduce el apetito en el envejecimiento?",
     "options": [
-      { "text": "La internación domiciliaria interdisciplinaria", "correct": true },
-      { "text": "El tratamiento ambulatorio aislado", "correct": false },
-      { "text": "La derivación exclusiva a hospitales", "correct": false },
-      { "text": "El seguimiento telefónico", "correct": false }
+      { "text": "Aumento de la sensibilidad al gusto y olfato", "correct": false },
+      { "text": "Disminución del gusto/olfato y saciedad temprana", "correct": true },
+      { "text": "Aumento del vaciamiento gástrico", "correct": false },
+      { "text": "Mayor producción de ghrelina", "correct": false }
     ],
-    "explanation": "El modelo de atención de Dar Salud se distingue por la internación domiciliaria interdisciplinaria, brindando atención integral en el hogar del paciente."
+    "explanation": "Con el envejecimiento disminuyen el gusto y el olfato y aparece saciedad temprana, lo que reduce el apetito y favorece una ingesta insuficiente."
   },
   {
-    "id": "dar1_2",
-    "category": "Dar Salud I - Somos equipo profesional",
-    "text": "¿Qué valor guía la práctica profesional en Dar Salud?",
+    "id": "ali2",
+    "category": "Alimentación",
+    "text": "¿Qué nutriente es especialmente importante suplementar por la menor síntesis cutánea en la vejez?",
     "options": [
-      { "text": "La eficiencia por sobre la calidad", "correct": false },
-      { "text": "La cooperación y el respeto por la dignidad del paciente", "correct": true },
-      { "text": "La atención fragmentada por área", "correct": false },
-      { "text": "La atención únicamente técnica", "correct": false }
+      { "text": "Vitamina C", "correct": false },
+      { "text": "Vitamina D", "correct": true },
+      { "text": "Vitamina A", "correct": false },
+      { "text": "Vitamina K", "correct": false }
     ],
-    "explanation": "La cooperación y el respeto por la dignidad del paciente son valores fundamentales que guían la práctica profesional en Dar Salud."
+    "explanation": "La síntesis cutánea de vitamina D disminuye con la edad, por lo que su suplementación es especialmente relevante en personas mayores."
   },
   {
-    "id": "dar1_3",
-    "category": "Dar Salud I - Somos equipo profesional",
-    "text": "¿Qué beneficio aporta el modelo domiciliario al sistema de salud?",
+    "id": "ali3",
+    "category": "Alimentación",
+    "text": "¿Cuál es la causa más frecuente del déficit de vitamina B12 en personas mayores?",
     "options": [
-      { "text": "Evita reinternaciones y mejora la adherencia terapéutica", "correct": true },
-      { "text": "Aumenta costos", "correct": false },
-      { "text": "Reduce el trabajo del equipo", "correct": false },
-      { "text": "Limita la atención a ciertos pacientes", "correct": false }
+      { "text": "Exceso de exposición solar", "correct": false },
+      { "text": "Menor absorción gástrica", "correct": true },
+      { "text": "Excesivo consumo de carne", "correct": false },
+      { "text": "No es un déficit frecuente en esta población", "correct": false }
     ],
-    "explanation": "El modelo domiciliario aporta beneficios al sistema de salud al evitar reinternaciones y mejorar la adherencia terapéutica de los pacientes."
+    "explanation": "La causa más frecuente del déficit de vitamina B12 en personas mayores es la menor absorción a nivel gástrico, no la falta de consumo."
   },
   {
-    "id": "dar1_4",
-    "category": "Dar Salud I - Somos equipo profesional",
-    "text": "En Dar Salud, enfermería es:",
+    "id": "ali4",
+    "category": "Alimentación",
+    "text": "La ingesta proteica orientativa para prevenir sarcopenia en la persona mayor sana suele ser:",
     "options": [
-      { "text": "Un soporte técnico del equipo médico", "correct": false },
-      { "text": "El eje coordinador del cuidado integral", "correct": true },
-      { "text": "Un rol auxiliar", "correct": false },
-      { "text": "Un servicio independiente", "correct": false }
+      { "text": "0.8 g/kg/día", "correct": false },
+      { "text": "1.0-1.2 g/kg/día (o más si hay enfermedad)", "correct": true },
+      { "text": "2.5-3 g/kg/día (o menos si hay enfermedad)", "correct": false },
+      { "text": "0.5 g/kg/día", "correct": false }
     ],
-    "explanation": "En Dar Salud, enfermería cumple el rol de eje coordinador del cuidado integral, siendo fundamental en la atención interdisciplinaria."
+    "explanation": "Para prevenir la sarcopenia, la ingesta proteica orientativa en la persona mayor sana es de 1.0 a 1.2 g/kg/día, y puede ser mayor en presencia de enfermedad."
   },
 
   {
-    "id": "dar2_1",
-    "category": "Dar Salud II - Del hospital al hogar",
-    "text": "¿Qué principio orienta la planificación de cuidados en Dar Salud?",
+    "id": "cog1",
+    "category": "Salud cognitiva",
+    "text": "¿Qué diferencia al deterioro cognitivo leve (DCL) de la demencia?",
     "options": [
-      { "text": "Adaptar la intervención a las condiciones clínicas y sociales", "correct": true },
-      { "text": "Seguir rutinas hospitalarias sin cambios", "correct": false },
-      { "text": "Priorizar lo administrativo", "correct": false },
-      { "text": "Unificar protocolos sin personalización", "correct": false }
+      { "text": "Son lo mismo con distinto nombre", "correct": false },
+      { "text": "En el DCL se preservan las actividades básicas; en la demencia hay compromiso funcional significativo", "correct": true },
+      { "text": "El DCL siempre es reversible y la demencia nunca", "correct": false },
+      { "text": "El DCL solo afecta la memoria y la demencia solo el lenguaje", "correct": false }
     ],
-    "explanation": "La planificación de cuidados en Dar Salud se orienta por adaptar la intervención a las condiciones clínicas y sociales específicas de cada paciente."
+    "explanation": "En el deterioro cognitivo leve se preservan las actividades básicas de la vida diaria; en la demencia existe un compromiso funcional significativo."
   },
   {
-    "id": "dar2_2",
-    "category": "Dar Salud II - Del hospital al hogar",
-    "text": "¿Qué caracteriza al equipo profesional de Dar Salud?",
+    "id": "cog2",
+    "category": "Salud cognitiva",
+    "text": "¿Cuál es la causa más frecuente de demencia en personas mayores?",
     "options": [
-      { "text": "Su formación continua y trabajo interdisciplinario", "correct": true },
-      { "text": "La independencia entre áreas", "correct": false },
-      { "text": "El enfoque exclusivo en adultos mayores", "correct": false },
-      { "text": "La atención remota", "correct": false }
+      { "text": "Demencia vascular", "correct": false },
+      { "text": "Enfermedad de Alzheimer", "correct": true },
+      { "text": "Demencia frontotemporal", "correct": false },
+      { "text": "Enfermedad de Parkinson", "correct": false }
     ],
-    "explanation": "El equipo profesional de Dar Salud se caracteriza por su formación continua y su trabajo interdisciplinario integrado."
+    "explanation": "La enfermedad de Alzheimer es la causa más frecuente de demencia en personas mayores."
   },
   {
-    "id": "dar2_3",
-    "category": "Dar Salud II - Del hospital al hogar",
-    "text": "¿Qué representa el lema \"Estamos con vos\"?",
+    "id": "cog3",
+    "category": "Salud cognitiva",
+    "text": "La hidrocefalia normotensiva causa un deterioro cognitivo que es:",
     "options": [
-      { "text": "El acompañamiento constante, humano y profesional", "correct": true },
-      { "text": "Una frase simbólica", "correct": false },
-      { "text": "Un programa interno", "correct": false },
-      { "text": "Un protocolo administrativo", "correct": false }
+      { "text": "Exclusivamente motor", "correct": false },
+      { "text": "Siempre irreversible", "correct": false },
+      { "text": "Inexistente", "correct": false },
+      { "text": "Potencialmente reversible", "correct": true }
     ],
-    "explanation": "El lema \"Estamos con vos\" representa el compromiso de Dar Salud con el acompañamiento constante, humano y profesional de sus pacientes."
+    "explanation": "La hidrocefalia normotensiva produce un deterioro cognitivo potencialmente reversible, por lo que su detección oportuna es clave."
   },
   {
-    "id": "dar2_4",
-    "category": "Dar Salud II - Del hospital al hogar",
-    "text": "¿Cuál es un eje clave del trabajo de enfermería en Dar Salud?",
+    "id": "cog4",
+    "category": "Salud cognitiva",
+    "text": "En el envejecimiento no patológico, ¿qué tipo de memoria tiende a mostrar mayor declive?",
     "options": [
-      { "text": "La educación al paciente y su familia", "correct": true },
-      { "text": "El control administrativo", "correct": false },
-      { "text": "La reducción de visitas domiciliarias", "correct": false },
-      { "text": "La centralización de decisiones", "correct": false }
+      { "text": "La memoria semántica", "correct": false },
+      { "text": "La memoria episódica", "correct": true },
+      { "text": "La memoria procedimental", "correct": false },
+      { "text": "La memoria implícita", "correct": false }
     ],
-    "explanation": "Un eje clave del trabajo de enfermería en Dar Salud es la educación al paciente y su familia, promoviendo el autocuidado y la autonomía."
+    "explanation": "En el envejecimiento no patológico, la memoria episódica es la que muestra mayor declive, mientras que la semántica, la procedimental y la implícita se conservan mejor."
+  },
+
+  {
+    "id": "red1",
+    "category": "Red social y bienestar",
+    "text": "Durante los períodos de aislamiento social prolongado en instituciones de larga estadía, ¿qué se observó con mayor frecuencia en personas mayores?",
+    "options": [
+      { "text": "Aumento de síntomas ansiosos y depresivos, junto con mayor sedentarismo", "correct": true },
+      { "text": "Aumento de síntomas ansiosos y depresivos, sin cambios significativos en los niveles de actividad física", "correct": false },
+      { "text": "Mayor sedentarismo, sin un incremento proporcional en los síntomas de ansiedad o depresión", "correct": false },
+      { "text": "Alteraciones del sueño y mayor sedentarismo, sin cambios relevantes en el estado de ánimo", "correct": false }
+    ],
+    "explanation": "El aislamiento social prolongado en instituciones de larga estadía se asoció con un aumento de síntomas ansiosos y depresivos junto con mayor sedentarismo."
+  },
+  {
+    "id": "red2",
+    "category": "Red social y bienestar",
+    "text": "La soledad crónica en personas mayores masculinas se asocia en la literatura con:",
+    "options": [
+      { "text": "Deterioro cognitivo, cuadros depresivos y mayor mortalidad general", "correct": true },
+      { "text": "Deterioro cognitivo y cuadros depresivos, sin impacto significativo sobre la mortalidad", "correct": false },
+      { "text": "Mayor mortalidad general, sin asociación consistente con el estado de ánimo o la cognición", "correct": false },
+      { "text": "Cuadros depresivos y mayor mortalidad, sin asociación consistente con el deterioro cognitivo", "correct": false }
+    ],
+    "explanation": "La literatura asocia la soledad crónica en varones mayores con deterioro cognitivo, cuadros depresivos y mayor mortalidad general."
+  },
+  {
+    "id": "red3",
+    "category": "Red social y bienestar",
+    "text": "¿Qué mide la escala de Lubben?",
+    "options": [
+      { "text": "Red social", "correct": true },
+      { "text": "Estado nutricional", "correct": false },
+      { "text": "Función cognitiva", "correct": false },
+      { "text": "Riesgo de caídas", "correct": false }
+    ],
+    "explanation": "La escala de Lubben evalúa la red social de la persona mayor: el tamaño y la frecuencia de contacto con familiares y amigos."
+  },
+  {
+    "id": "red4",
+    "category": "Red social y bienestar",
+    "text": "¿Qué se entiende por \"claudicación familiar\" en cuidados paliativos?",
+    "options": [
+      { "text": "Crisis del sistema de cuidado por agotamiento familiar", "correct": true },
+      { "text": "Duelo anticipado del núcleo familiar", "correct": false },
+      { "text": "Reorganización de roles de cuidado", "correct": false },
+      { "text": "Conflicto de comunicación con el equipo tratante", "correct": false }
+    ],
+    "explanation": "La claudicación familiar es la crisis del sistema de cuidado que se produce por el agotamiento de la familia cuidadora."
+  },
+
+  {
+    "id": "mit1",
+    "category": "Mitos",
+    "text": "¿El dolor crónico constante debe considerarse parte \"normal\" del envejecimiento?",
+    "options": [
+      { "text": "Solo parcialmente, según su interferencia funcional", "correct": false },
+      { "text": "Sí, refleja cambios degenerativos propios del envejecimiento", "correct": false },
+      { "text": "No, no es un proceso fisiológico esperado; requiere evaluación", "correct": true },
+      { "text": "No necesariamente, aunque su tratamiento suele ser limitado", "correct": false }
+    ],
+    "explanation": "El dolor crónico no es un proceso fisiológico esperado del envejecimiento: siempre requiere evaluación y abordaje."
+  },
+  {
+    "id": "mit2",
+    "category": "Mitos",
+    "text": "¿Es cierto que la pérdida auditiva leve en personas mayores no requiere intervención hasta que se vuelva severa?",
+    "options": [
+      { "text": "Solo amerita intervención cuando compromete ambos oídos por igual", "correct": true },
+      { "text": "Las pérdidas leves no impactan de forma significativa en la comunicación ni en el funcionamiento cotidiano", "correct": false },
+      { "text": "Depende principalmente de si la persona vive acompañada o no", "correct": false },
+      { "text": "La pérdida auditiva no tratada se asocia con mayor riesgo de aislamiento social y deterioro cognitivo, por lo que amerita abordaje temprano", "correct": false }
+    ],
+    "explanation": "Según el material del congreso, la pérdida auditiva leve amerita intervención cuando compromete ambos oídos por igual."
+  },
+  {
+    "id": "mit3",
+    "category": "Mitos",
+    "text": "¿La cirugía debe evitarse siempre en pacientes de edad avanzada, dado el riesgo que implica?",
+    "options": [
+      { "text": "Se decide por valoración integral, no solo por edad", "correct": true },
+      { "text": "La edad contraindica por sí sola la mayoría de las cirugías", "correct": false },
+      { "text": "El riesgo depende casi exclusivamente del tipo de anestesia", "correct": false },
+      { "text": "Solo se indica en cuadros de urgencia, no programados", "correct": false }
+    ],
+    "explanation": "La indicación quirúrgica en personas mayores se decide mediante una valoración integral; la edad por sí sola no contraindica la cirugía."
+  },
+  {
+    "id": "mit4",
+    "category": "Mitos",
+    "text": "Ante un adulto mayor que olvida ocasionalmente dónde dejó las llaves, ¿debe interpretarse como un signo de demencia?",
+    "options": [
+      { "text": "No necesariamente, ya que los olvidos ocasionales sin impacto funcional pueden formar parte de cambios cognitivos leves asociados a la edad", "correct": true },
+      { "text": "Sí, cualquier olvido reiterado constituye un signo temprano de deterioro neurodegenerativo", "correct": false },
+      { "text": "Depende exclusivamente de si existen antecedentes familiares de demencia", "correct": false },
+      { "text": "Solo se considera relevante si ocurre en personas mayores de 80 años", "correct": false }
+    ],
+    "explanation": "Los olvidos ocasionales sin impacto funcional pueden formar parte de los cambios cognitivos leves asociados a la edad y no constituyen, por sí solos, un signo de demencia."
   }
 ]

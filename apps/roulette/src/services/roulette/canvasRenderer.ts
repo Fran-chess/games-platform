@@ -1,146 +1,389 @@
 /**
- * Servicio de renderizado del canvas para la ruleta
- * Maneja todo el dibujo y renderizado visual de la ruleta
+ * Renderizado de la ruleta en canvas
+ *
+ * La rueda se dibuja por capas para que el costo por frame sea mínimo:
+ * - Capa "wheel" (rota): segmentos y títulos. Se rasteriza una sola vez por
+ *   tamaño/preguntas en un canvas fuera de pantalla.
+ * - Capa "overlay" (fija): borde exterior y puntero. También se rasteriza
+ *   una sola vez.
+ * - Por frame solo se hace: limpiar, dibujar la capa "wheel" rotada, el
+ *   resplandor del segmento ganador y la capa "overlay".
+ *
+ * El botón central "GIRAR" no vive en el canvas: es un <button> del DOM
+ * superpuesto (ver RouletteWheel), así sus estados se animan por CSS en el
+ * compositor sin encender el loop de dibujo.
  */
 
-import type { WheelSegment } from '@/utils/roulette/segments';
-import { getContrastColor } from '@/utils/roulette/colors';
+import type { WheelSegment } from '@/types';
+import { getContrastColor, SEGMENT_TEXT_COLORS } from '@/utils/roulette/colors';
 
 /**
  * Configuración visual de la ruleta
  */
-export const VISUAL_CONFIG = {
-  /** Radio del círculo central como porcentaje del radio total */
-  CENTER_CIRCLE_RATIO: 0.15,
+const VISUAL_CONFIG = {
+  /** Radio de la rueda como fracción del lado del canvas */
+  WHEEL_RADIUS_RATIO: 0.44,
+  /** Radio del botón central (DOM) como fracción del radio de la rueda */
+  CENTER_BUTTON_RATIO: 0.19,
   /** Grosor del borde exterior */
   OUTER_BORDER_WIDTH: 8,
-  /** Grosor del borde del círculo central */
-  CENTER_BORDER_WIDTH: 4,
-  /** Tamaño de la flecha indicadora */
+  /** Tamaño del puntero */
   ARROW_SIZE: 25,
-  /** Desplazamiento de la flecha desde el borde */
+  /** Separación del puntero respecto del borde */
   ARROW_OFFSET: 5,
-  /** Radio de esquinas redondeadas para el texto */
-  TEXT_BORDER_RADIUS: 5,
-  /** Padding del texto */
-  TEXT_PADDING: 10,
-  /** Tamaño base de la fuente (se ajusta según el tamaño) */
-  BASE_FONT_SIZE: 16,
-  /** Factor de escala para el texto según el radio */
-  FONT_SCALE_FACTOR: 0.08,
-  /** Opacidad del highlight */
-  HIGHLIGHT_OPACITY: 0.3,
-  /** Intensidad del glow del ganador */
-  WINNER_GLOW_INTENSITY: 0.6,
+  /** Margen (px CSS) alrededor de la capa de la rueda para que los trazos no se recorten */
+  LAYER_PADDING: 4,
 } as const;
 
 /**
  * Colores del tema
  */
-export const THEME_COLORS = {
-  BACKGROUND: 'transparent',
+const THEME_COLORS = {
   OUTER_BORDER: '#2C3E50',
-  CENTER_CIRCLE: '#FFFFFF',
-  CENTER_BORDER: '#34495E',
-  CENTER_TEXT: '#2C3E50',
-  ARROW: '#E74C3C',
-  ARROW_SHADOW: 'rgba(231, 76, 60, 0.5)',
+  /** Rojo funcional del puntero: fuera de paleta a propósito, es el único indicador del resultado */
+  ARROW: '#D93A2B',
+  ARROW_SHADOW: 'rgba(217, 58, 43, 0.5)',
   SEGMENT_BORDER: '#FFFFFF',
-  HIGHLIGHT: 'rgba(255, 255, 255, 0.3)',
   WINNER_GLOW: 'rgba(255, 215, 0, 0.6)',
+  WINNER_STROKE: '#FFD700',
 } as const;
 
 /**
- * Contexto de renderizado con todas las propiedades necesarias
+ * Configuración del layout del texto dentro de cada segmento
  */
-export interface RenderContext {
-  canvas: HTMLCanvasElement;
-  ctx: CanvasRenderingContext2D;
+const TEXT_LAYOUT = {
+  /** Inicio de la banda de texto, como fracción del radio (el botón central llega a 0.19) */
+  INNER_RADIUS_RATIO: 0.3,
+  /** Fin de la banda de texto, como fracción del radio (deja margen antes del borde) */
+  OUTER_RADIUS_RATIO: 0.94,
+  /** Margen de seguridad respecto del ancho angular del segmento */
+  TANGENTIAL_SAFETY: 0.85,
+  /** Cantidad máxima de líneas por título */
+  MAX_LINES: 3,
+  /** Tamaño mínimo de fuente antes de dejar de reducir */
+  MIN_FONT_SIZE: 11,
+  /** Interlineado relativo al tamaño de fuente */
+  LINE_HEIGHT: 1.1,
+  /** Familia tipográfica de los títulos */
+  FONT_FAMILY: 'sans-serif',
+} as const;
+
+/**
+ * Geometría de la rueda en píxeles CSS
+ */
+export interface WheelGeometry {
+  /** Lado del canvas (cuadrado) */
+  size: number;
+  /** Relación de píxeles del dispositivo */
+  dpr: number;
   centerX: number;
   centerY: number;
   radius: number;
-  currentAngle: number;
-  segments: WheelSegment[];
-  highlightedSegment: number | null;
-  winnerGlowIntensity: number;
-  isSpinning: boolean;
+  /** Diámetro visible del botón central (DOM), derivado del radio de la rueda */
+  centerButtonDiameter: number;
 }
 
 /**
- * Limpia el canvas y prepara para el siguiente frame
+ * Capas pre-renderizadas de la rueda
  */
-export function clearCanvas(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement): void {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+export interface WheelLayers {
+  /** Segmentos y títulos; rota con la rueda */
+  wheel: HTMLCanvasElement;
+  /** Borde exterior y puntero; no rota */
+  overlay: HTMLCanvasElement;
+  /** Cantidad de segmentos con la que se generaron las capas */
+  segmentCount: number;
 }
 
 /**
- * Dibuja un segmento individual de la ruleta
+ * Estado dinámico de un frame
  */
-export function drawSegment(
+export interface FrameState {
+  /** Ángulo de la rueda en grados */
+  angleDeg: number;
+  /** Segmento ganador del último giro, o null */
+  winnerSegment: number | null;
+  /** Intensidad del resplandor del ganador (0 a 1) */
+  glowIntensity: number;
+}
+
+/**
+ * Calcula la geometría de la rueda a partir del tamaño de layout del contenedor.
+ * Usa clientWidth/clientHeight (no getBoundingClientRect) para ignorar transformaciones CSS.
+ *
+ * @returns Geometría, o null si el contenedor todavía no tiene tamaño
+ */
+export function createWheelGeometry(container: HTMLElement): WheelGeometry | null {
+  const size = Math.floor(Math.min(container.clientWidth, container.clientHeight));
+  if (size <= 0) return null;
+
+  const radius = size * VISUAL_CONFIG.WHEEL_RADIUS_RATIO;
+
+  return {
+    size,
+    dpr: window.devicePixelRatio || 1,
+    centerX: size / 2,
+    centerY: size / 2,
+    radius,
+    centerButtonDiameter: Math.round(radius * VISUAL_CONFIG.CENTER_BUTTON_RATIO * 2),
+  };
+}
+
+/**
+ * Configura el canvas visible para la geometría dada (resolución física + escala DPR)
+ *
+ * @returns Contexto 2D listo para dibujar en px CSS, o null si no está disponible
+ */
+export function setupCanvas(
+  canvas: HTMLCanvasElement,
+  geometry: WheelGeometry
+): CanvasRenderingContext2D | null {
+  const { size, dpr } = geometry;
+  canvas.width = Math.round(size * dpr);
+  canvas.height = Math.round(size * dpr);
+  canvas.style.width = `${size}px`;
+  canvas.style.height = `${size}px`;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+
+/**
+ * Crea un canvas fuera de pantalla de `sideCss` px CSS de lado, escalado al DPR
+ */
+function createLayerCanvas(
+  sideCss: number,
+  dpr: number
+): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(sideCss * dpr);
+  canvas.height = Math.ceil(sideCss * dpr);
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { canvas, ctx };
+}
+
+/**
+ * Ángulos de inicio y fin de un segmento, en radianes.
+ * El segmento 0 empieza arriba (−90°) y los siguientes avanzan en sentido horario.
+ */
+function getSegmentArc(index: number, segmentCount: number): { startAngle: number; endAngle: number } {
+  const anglePerSegment = (2 * Math.PI) / segmentCount;
+  const startAngle = index * anglePerSegment - Math.PI / 2;
+  return { startAngle, endAngle: startAngle + anglePerSegment };
+}
+
+/**
+ * Pre-renderiza las capas de la rueda. Llamar solo cuando cambian el tamaño o los segmentos.
+ *
+ * @returns Capas listas para `renderFrame`, o null si el canvas 2D no está disponible
+ */
+export function createWheelLayers(segments: WheelSegment[], geometry: WheelGeometry): WheelLayers | null {
+  const { size, dpr, centerX, centerY, radius } = geometry;
+
+  // Capa de la rueda: cuadrado centrado en la rueda con margen para los trazos
+  const wheelHalfSide = radius + VISUAL_CONFIG.LAYER_PADDING;
+  const wheelLayer = createLayerCanvas(wheelHalfSide * 2, dpr);
+  if (!wheelLayer) return null;
+
+  segments.forEach((segment, index) => {
+    const { startAngle, endAngle } = getSegmentArc(index, segments.length);
+    drawSegment(wheelLayer.ctx, segment, startAngle, endAngle, wheelHalfSide, wheelHalfSide, radius);
+    drawSegmentText(wheelLayer.ctx, segment.text, startAngle, endAngle, wheelHalfSide, wheelHalfSide, radius, segment.color);
+  });
+
+  // Capa fija: mismo tamaño que el canvas visible
+  const overlayLayer = createLayerCanvas(size, dpr);
+  if (!overlayLayer) return null;
+
+  drawOuterBorder(overlayLayer.ctx, centerX, centerY, radius);
+  drawArrow(overlayLayer.ctx, centerX, centerY, radius);
+
+  return {
+    wheel: wheelLayer.canvas,
+    overlay: overlayLayer.canvas,
+    segmentCount: segments.length,
+  };
+}
+
+/**
+ * Dibuja un frame completo: rueda rotada + resplandor del ganador + capa fija
+ */
+export function renderFrame(
+  ctx: CanvasRenderingContext2D,
+  geometry: WheelGeometry,
+  layers: WheelLayers,
+  frame: FrameState
+): void {
+  const { size, centerX, centerY, radius } = geometry;
+  const wheelHalfSide = radius + VISUAL_CONFIG.LAYER_PADDING;
+
+  ctx.clearRect(0, 0, size, size);
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate((frame.angleDeg * Math.PI) / 180);
+  ctx.drawImage(layers.wheel, -wheelHalfSide, -wheelHalfSide, wheelHalfSide * 2, wheelHalfSide * 2);
+
+  if (frame.winnerSegment !== null && frame.glowIntensity > 0 && layers.segmentCount > 0) {
+    drawWinnerGlow(ctx, frame.winnerSegment, layers.segmentCount, radius, frame.glowIntensity);
+  }
+  ctx.restore();
+
+  ctx.drawImage(layers.overlay, 0, 0, size, size);
+}
+
+/**
+ * Resplandor del segmento ganador sobre la rueda ya rotada (coordenadas locales, origen en el centro)
+ */
+function drawWinnerGlow(
+  ctx: CanvasRenderingContext2D,
+  index: number,
+  segmentCount: number,
+  radius: number,
+  glowIntensity: number
+): void {
+  const { startAngle, endAngle } = getSegmentArc(index, segmentCount);
+
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.arc(0, 0, radius, startAngle, endAngle);
+  ctx.closePath();
+
+  ctx.globalAlpha = glowIntensity * 0.7;
+  ctx.fillStyle = THEME_COLORS.WINNER_GLOW;
+  ctx.fill();
+
+  ctx.globalAlpha = glowIntensity;
+  ctx.strokeStyle = THEME_COLORS.WINNER_STROKE;
+  ctx.lineWidth = 4 + glowIntensity * 6;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+/**
+ * Dibuja el relleno y el borde de un segmento
+ */
+function drawSegment(
   ctx: CanvasRenderingContext2D,
   segment: WheelSegment,
   startAngle: number,
   endAngle: number,
   centerX: number,
   centerY: number,
-  radius: number,
-  isHighlighted: boolean = false,
-  glowIntensity: number = 0
+  radius: number
 ): void {
-  ctx.save();
-
-  // Si hay glow del ganador, expandir ligeramente el segmento
-  if (glowIntensity > 0) {
-    const scale = 1 + (glowIntensity * 0.05); // Expande hasta 5%
-    ctx.translate(centerX, centerY);
-    ctx.scale(scale, scale);
-    ctx.translate(-centerX, -centerY);
-  }
-
-  // Dibujar el segmento principal
   ctx.beginPath();
   ctx.moveTo(centerX, centerY);
   ctx.arc(centerX, centerY, radius, startAngle, endAngle);
   ctx.closePath();
 
-  // Aplicar color del segmento
   ctx.fillStyle = segment.color;
   ctx.fill();
 
-  // Aplicar highlight si está activo
-  if (isHighlighted) {
-    ctx.fillStyle = THEME_COLORS.HIGHLIGHT;
-    ctx.fill();
-  }
-
-  // Aplicar glow del ganador con efecto más notorio
-  if (glowIntensity > 0) {
-    // Overlay brillante
-    ctx.globalAlpha = glowIntensity * 0.7;
-    ctx.fillStyle = THEME_COLORS.WINNER_GLOW;
-    ctx.fill();
-
-    // Borde brillante más grueso
-    ctx.strokeStyle = '#FFD700';
-    ctx.lineWidth = 4 + (glowIntensity * 6); // Borde más grueso cuando gana
-    ctx.globalAlpha = glowIntensity;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-  }
-
-  // Dibujar borde normal del segmento
   ctx.strokeStyle = THEME_COLORS.SEGMENT_BORDER;
-  ctx.lineWidth = glowIntensity > 0 ? 3 : 2;
+  ctx.lineWidth = 2;
   ctx.stroke();
+}
 
-  ctx.restore();
+interface TextLayout {
+  lines: string[];
+  fontSize: number;
+}
+
+function segmentFont(fontSize: number): string {
+  return `bold ${fontSize}px ${TEXT_LAYOUT.FONT_FAMILY}`;
 }
 
 /**
- * Dibuja el texto radialmente desde el centro hacia afuera
- * Exactamente como en la imagen de referencia
+ * Genera todas las particiones contiguas de `words` en exactamente `lineCount` líneas
  */
-export function drawSegmentText(
+function enumerateLineSplits(words: string[], lineCount: number): string[][] {
+  if (lineCount === 1) return [[words.join(' ')]];
+
+  const results: string[][] = [];
+  // La primera línea toma entre 1 y (n - lineCount + 1) palabras; el resto se reparte recursivamente
+  for (let take = 1; take <= words.length - (lineCount - 1); take++) {
+    const head = words.slice(0, take).join(' ');
+    for (const rest of enumerateLineSplits(words.slice(take), lineCount - 1)) {
+      results.push([head, ...rest]);
+    }
+  }
+  return results;
+}
+
+/**
+ * Busca la división en la menor cantidad de líneas que entre en `maxWidth`,
+ * eligiendo entre las opciones de igual cantidad de líneas la más balanceada
+ * (menor ancho de la línea más larga). Devuelve null si ninguna entra.
+ */
+function findBestWrap(
+  ctx: CanvasRenderingContext2D,
+  words: string[],
+  maxWidth: number,
+  maxLines: number
+): string[] | null {
+  const limit = Math.min(maxLines, words.length);
+
+  for (let lineCount = 1; lineCount <= limit; lineCount++) {
+    let best: string[] | null = null;
+    let bestWidth = Infinity;
+
+    for (const candidate of enumerateLineSplits(words, lineCount)) {
+      const widest = Math.max(...candidate.map(line => ctx.measureText(line).width));
+      if (widest <= maxWidth && widest < bestWidth) {
+        best = candidate;
+        bestWidth = widest;
+      }
+    }
+
+    if (best) return best;
+  }
+
+  return null;
+}
+
+/**
+ * Calcula líneas y tamaño de fuente para que un título entre en el espacio disponible.
+ * Parte de `preferredFontSize` y reduce de a 1px hasta que el texto entra o se llega al mínimo.
+ */
+function layoutSegmentText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  preferredFontSize: number,
+  maxWidth: number,
+  maxHeight: number
+): TextLayout {
+  const words = text.trim().split(/\s+/);
+
+  for (let fontSize = preferredFontSize; fontSize >= TEXT_LAYOUT.MIN_FONT_SIZE; fontSize -= 1) {
+    ctx.font = segmentFont(fontSize);
+    const lines = findBestWrap(ctx, words, maxWidth, TEXT_LAYOUT.MAX_LINES);
+    if (lines && lines.length * fontSize * TEXT_LAYOUT.LINE_HEIGHT <= maxHeight) {
+      return { lines, fontSize };
+    }
+  }
+
+  // Último recurso: fuente mínima y una palabra por línea (hasta MAX_LINES)
+  const lines = words.length <= TEXT_LAYOUT.MAX_LINES
+    ? words
+    : [...words.slice(0, TEXT_LAYOUT.MAX_LINES - 1), words.slice(TEXT_LAYOUT.MAX_LINES - 1).join(' ')];
+  return { lines, fontSize: TEXT_LAYOUT.MIN_FONT_SIZE };
+}
+
+/**
+ * Dibuja el título del segmento en sentido radial, centrado en la banda
+ * comprendida entre INNER_RADIUS_RATIO y OUTER_RADIUS_RATIO.
+ * El texto se parte en líneas y se reduce automáticamente para que siempre
+ * quede dentro del segmento, sin importar el título ni la cantidad de segmentos.
+ */
+function drawSegmentText(
   ctx: CanvasRenderingContext2D,
   text: string,
   startAngle: number,
@@ -148,170 +391,66 @@ export function drawSegmentText(
   centerX: number,
   centerY: number,
   radius: number,
-  segmentColor: string,
-  isWinner: boolean = false
+  segmentColor: string
 ): void {
   ctx.save();
 
-  // Calcular el ángulo medio del segmento
   const middleAngle = (startAngle + endAngle) / 2;
+  const segmentAngle = endAngle - startAngle;
 
-  // Configurar estilo del texto - más grande si es ganador
-  const baseFontSize = Math.min(22, Math.max(16, radius * 0.09));
-  const fontSize = isWinner ? baseFontSize * 1.2 : baseFontSize;
-  ctx.font = `bold ${fontSize}px sans-serif`;
-  ctx.fillStyle = isWinner ? '#FFFFFF' : getContrastColor(segmentColor);
-  ctx.textAlign = 'left';
+  // Espacio disponible: ancho radial de la banda y alto tangencial en su borde interno
+  const innerRadius = radius * TEXT_LAYOUT.INNER_RADIUS_RATIO;
+  const outerRadius = radius * TEXT_LAYOUT.OUTER_RADIUS_RATIO;
+  const maxWidth = outerRadius - innerRadius;
+  const maxHeight = 2 * innerRadius * Math.tan(segmentAngle / 2) * TEXT_LAYOUT.TANGENTIAL_SAFETY;
+
+  const preferredFontSize = Math.min(22, Math.max(16, radius * 0.09));
+  const { lines, fontSize } = layoutSegmentText(ctx, text, preferredFontSize, maxWidth, maxHeight);
+
+  ctx.font = segmentFont(fontSize);
+  ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Sombra para mejor legibilidad - más fuerte si es ganador
-  if (isWinner) {
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-  } else {
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+  // Regla de legibilidad: el color de texto lo decide el contraste WCAG contra el fondo.
+  // La sombra oscura solo acompaña al texto claro; bajo texto oscuro embarra los bordes.
+  const textColor = getContrastColor(segmentColor);
+  ctx.fillStyle = textColor;
+  if (textColor === SEGMENT_TEXT_COLORS.LIGHT) {
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
     ctx.shadowBlur = 3;
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
   }
 
-  // Dividir el texto en líneas apropiadamente
-  const words = text.split(' ');
-  let lines: string[] = [];
-
-  // División específica para cada categoría
-  if (text === "Cuidar con empatía") {
-    lines = ["Cuidar con", "empatía"];
-  } else if (text === "Práctica profesional") {
-    lines = ["Práctica", "profesional"];
-  } else if (text === "Seguridad y bioseguridad") {
-    lines = ["Seguridad y", "bioseguridad"];
-  } else if (text === "Cuidado clínico") {
-    lines = ["Cuidado", "clínico"];
-  } else if (text === "Dar Salud") {
-    lines = ["Dar Salud"];  // Una sola línea
-  } else {
-    // Por defecto, cada palabra en su línea si hay 2 palabras
-    if (words.length === 2) {
-      lines = words;
-    } else if (words.length === 3) {
-      lines = [words[0], words.slice(1).join(' ')];
-    } else {
-      lines = [text];
-    }
-  }
-
-  // Trasladar al centro
+  // Orientar el eje X en sentido radial del segmento
   ctx.translate(centerX, centerY);
-
-  // Rotar al ángulo del segmento
   ctx.rotate(middleAngle);
 
-  // Determinar si necesitamos invertir el texto (mitad izquierda)
-  const angleInDegrees = (middleAngle * 180 / Math.PI) % 360;
-  const normalizedAngle = angleInDegrees < 0 ? angleInDegrees + 360 : angleInDegrees;
+  // En la mitad izquierda se invierte el texto para que nunca quede cabeza abajo
+  const normalizedAngle = (((middleAngle * 180) / Math.PI) % 360 + 360) % 360;
   const needsFlip = normalizedAngle > 90 && normalizedAngle < 270;
 
-  // Posición inicial del texto y espaciado
-  const lineHeight = fontSize * 1.1;
-  const totalHeight = lines.length * lineHeight;
-
+  const bandCenter = (innerRadius + outerRadius) / 2;
+  let anchorX = bandCenter;
   if (needsFlip) {
-    // Para la mitad izquierda, rotar 180 grados
     ctx.rotate(Math.PI);
-
-    // Posicionar desde el borde hacia el centro
-    // Ajustar posición específica para categorías con texto largo
-    let startX = -radius * 0.75;
-    if (text === "Cuidado interdisciplinario" || text === "Seguridad y bioseguridad") {
-      startX = -radius * 0.80; // Más alejado del centro en el lado izquierdo
-    }
-
-    const startY = -totalHeight / 2 + lineHeight / 2;
-
-    lines.forEach((line, index) => {
-      const y = startY + index * lineHeight;
-      ctx.fillText(line, startX, y);
-    });
-  } else {
-    // Para la mitad derecha, texto normal
-    // Ajustar posición específica para categorías con texto largo
-    let startX = radius * 0.35;
-    if (text === "Cuidado interdisciplinario" || text === "Seguridad y bioseguridad") {
-      startX = radius * 0.42; // Más alejado del centro
-    }
-
-    const startY = -totalHeight / 2 + lineHeight / 2;
-
-    lines.forEach((line, index) => {
-      const y = startY + index * lineHeight;
-      ctx.fillText(line, startX, y);
-    });
+    anchorX = -bandCenter;
   }
 
+  const lineHeight = fontSize * TEXT_LAYOUT.LINE_HEIGHT;
+  const startY = -((lines.length - 1) * lineHeight) / 2;
+
+  lines.forEach((line, index) => {
+    ctx.fillText(line, anchorX, startY + index * lineHeight);
+  });
+
   ctx.restore();
 }
 
 /**
- * Dibuja el círculo central de la ruleta
+ * Dibuja el puntero superior
  */
-export function drawCenterCircle(
-  ctx: CanvasRenderingContext2D,
-  centerX: number,
-  centerY: number,
-  radius: number
-): void {
-  const centerRadius = radius * VISUAL_CONFIG.CENTER_CIRCLE_RATIO;
-
-  // Sombra para el bot\u00f3n
-  ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 4;
-
-  // Gradiente para el bot\u00f3n
-  const gradient = ctx.createLinearGradient(
-    centerX - centerRadius,
-    centerY - centerRadius,
-    centerX + centerRadius,
-    centerY + centerRadius
-  );
-  gradient.addColorStop(0, '#0652D4');
-  gradient.addColorStop(0.5, '#0435A3');
-  gradient.addColorStop(1, '#032B7A');
-
-  // Dibujar c\u00edrculo central con gradiente
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, centerRadius, 0, 2 * Math.PI);
-  ctx.fillStyle = gradient;
-  ctx.fill();
-
-  // Borde del c\u00edrculo central
-  ctx.strokeStyle = '#08C3FC';
-  ctx.lineWidth = VISUAL_CONFIG.CENTER_BORDER_WIDTH + 1;
-  ctx.stroke();
-
-  ctx.restore();
-
-  // Texto "GIRAR" en el centro
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = `bold ${centerRadius * 0.45}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-  ctx.shadowBlur = 3;
-  ctx.shadowOffsetX = 1;
-  ctx.shadowOffsetY = 1;
-  ctx.fillText('GIRAR', centerX, centerY);
-}
-
-/**
- * Dibuja la flecha indicadora
- */
-export function drawArrow(
+function drawArrow(
   ctx: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
@@ -321,13 +460,10 @@ export function drawArrow(
   const arrowY = centerY - radius - VISUAL_CONFIG.ARROW_OFFSET;
 
   ctx.save();
-
-  // Sombra de la flecha
   ctx.shadowColor = THEME_COLORS.ARROW_SHADOW;
   ctx.shadowBlur = 10;
   ctx.shadowOffsetY = 3;
 
-  // Dibujar triángulo (flecha)
   ctx.beginPath();
   ctx.moveTo(centerX, arrowY);
   ctx.lineTo(centerX - arrowSize / 2, arrowY - arrowSize);
@@ -337,18 +473,16 @@ export function drawArrow(
   ctx.fillStyle = THEME_COLORS.ARROW;
   ctx.fill();
 
-  // Borde de la flecha
   ctx.strokeStyle = THEME_COLORS.SEGMENT_BORDER;
   ctx.lineWidth = 2;
   ctx.stroke();
-
   ctx.restore();
 }
 
 /**
- * Dibuja el borde exterior de la ruleta
+ * Dibuja el borde exterior de la rueda
  */
-export function drawOuterBorder(
+function drawOuterBorder(
   ctx: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
@@ -359,143 +493,4 @@ export function drawOuterBorder(
   ctx.strokeStyle = THEME_COLORS.OUTER_BORDER;
   ctx.lineWidth = VISUAL_CONFIG.OUTER_BORDER_WIDTH;
   ctx.stroke();
-}
-
-/**
- * Renderiza la ruleta completa
- */
-export function renderRoulette(context: RenderContext): void {
-  const {
-    canvas,
-    ctx,
-    centerX,
-    centerY,
-    radius,
-    currentAngle,
-    segments,
-    highlightedSegment,
-    winnerGlowIntensity,
-    isSpinning
-  } = context;
-
-  // Limpiar canvas
-  clearCanvas(ctx, canvas);
-
-  // Guardar estado del contexto
-  ctx.save();
-
-  // Aplicar rotación global
-  ctx.translate(centerX, centerY);
-  ctx.rotate((currentAngle * Math.PI) / 180);
-  ctx.translate(-centerX, -centerY);
-
-  // Dibujar segmentos
-  const anglePerSegment = (2 * Math.PI) / segments.length;
-  segments.forEach((segment, index) => {
-    const startAngle = index * anglePerSegment - Math.PI / 2;
-    const endAngle = startAngle + anglePerSegment;
-
-    const isHighlighted = index === highlightedSegment;
-    const glowIntensity = index === highlightedSegment ? winnerGlowIntensity : 0;
-
-    // Dibujar segmento
-    drawSegment(
-      ctx,
-      segment,
-      startAngle,
-      endAngle,
-      centerX,
-      centerY,
-      radius,
-      isHighlighted && !isSpinning,
-      glowIntensity
-    );
-
-    // Dibujar texto del segmento
-    const isWinner = index === highlightedSegment && winnerGlowIntensity > 0;
-    drawSegmentText(
-      ctx,
-      segment.text,
-      startAngle,
-      endAngle,
-      centerX,
-      centerY,
-      radius,
-      segment.color,
-      isWinner
-    );
-  });
-
-  // Restaurar contexto antes de dibujar elementos estáticos
-  ctx.restore();
-
-  // Dibujar elementos estáticos (no rotan)
-  drawOuterBorder(ctx, centerX, centerY, radius);
-  drawCenterCircle(ctx, centerX, centerY, radius);
-  drawArrow(ctx, centerX, centerY, radius);
-}
-
-/**
- * Ajusta el tamaño del canvas según el contenedor
- */
-export function resizeCanvas(
-  canvas: HTMLCanvasElement,
-  container: HTMLElement
-): { width: number; height: number; radius: number } {
-  const rect = container.getBoundingClientRect();
-  const size = Math.min(rect.width, rect.height);
-
-  // Configurar resolución del canvas para pantallas de alta densidad
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = size * dpr;
-  canvas.height = size * dpr;
-  canvas.style.width = `${size}px`;
-  canvas.style.height = `${size}px`;
-
-  // Escalar el contexto para que coincida con el device pixel ratio
-  const ctx = canvas.getContext('2d');
-  if (ctx) {
-    ctx.scale(dpr, dpr);
-  }
-
-  const radius = size * 0.44; // Radio al 44% del tamaño - moderadamente más grande
-
-  return {
-    width: size,
-    height: size,
-    radius
-  };
-}
-
-/**
- * Calcula qué segmento está bajo el puntero
- */
-export function getSegmentAtPointer(
-  mouseX: number,
-  mouseY: number,
-  centerX: number,
-  centerY: number,
-  currentAngle: number,
-  numSegments: number
-): number | null {
-  // Calcular distancia desde el centro
-  const dx = mouseX - centerX;
-  const dy = mouseY - centerY;
-  const distance = Math.sqrt(dx * dx + dy * dy);
-
-  // Verificar si está dentro del radio de la ruleta
-  const maxRadius = Math.min(centerX, centerY) * 0.8;
-  if (distance > maxRadius) return null;
-
-  // Calcular ángulo del puntero
-  let angle = Math.atan2(dy, dx);
-  angle = angle < 0 ? angle + 2 * Math.PI : angle;
-
-  // Ajustar por la rotación actual
-  const adjustedAngle = (angle - (currentAngle * Math.PI) / 180 + Math.PI / 2) % (2 * Math.PI);
-  const positiveAngle = adjustedAngle < 0 ? adjustedAngle + 2 * Math.PI : adjustedAngle;
-
-  // Calcular segmento
-  const segmentAngle = (2 * Math.PI) / numSegments;
-  return Math.floor(positiveAngle / segmentAngle) % numSegments;
 }

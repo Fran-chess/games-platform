@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import ShellRootClient from "@/components/layout/ShellRootClient";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 
 // [modificación] Configuración de viewport separada según Next.js 15
@@ -15,14 +15,14 @@ export const viewport: Viewport = {
 
 // [modificación] Configuración PWA y metadatos optimizados (sin viewport y themeColor)
 export const metadata: Metadata = {
-  title: "DarSalud - Juego Interactivo",
-  description: "Juego interactivo de DarSalud para tablets y TV con sincronización en tiempo real",
+  title: "Ruleta DarSalud",
+  description: "Ruleta interactiva con preguntas para tablets - DarSalud",
   manifest: "/manifest.json",
-  applicationName: "DarSalud",
+  applicationName: "Ruleta DarSalud",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "DarSalud",
+    title: "Ruleta DarSalud",
   },
   formatDetection: {
     telephone: false,
@@ -56,9 +56,9 @@ export default function RootLayout({
         {/* [modificación] Link al manifest para PWA */}
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className="bg-main-gradient h-screen font-sans text-white">
+      <body className="bg-game-gradient h-screen font-sans text-white">
         <PerformanceMonitor />
-        <ShellRootClient>{children}</ShellRootClient>
+        <ErrorBoundary>{children}</ErrorBoundary>
       </body>
     </html>
   );

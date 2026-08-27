@@ -131,9 +131,9 @@ export default function QuestionDisplay({
       animate={{ opacity: 1 }}
       className="w-full h-full flex items-center justify-center p-4 relative"
     >
-      {/* Timer - Reubicado arriba a la derecha, más pequeño */}
+      {/* Timer - Esquina superior derecha, fuera del área del logo (que va centrado arriba) */}
       <div
-        className="fixed top-40 sm:top-24 left-1/2 -translate-x-1/2 z-50 scale-75 sm:scale-90"
+        className="fixed top-5 right-5 z-50"
         aria-live="polite"
         aria-atomic="true"
         aria-label={`Tiempo restante: ${timer.seconds} segundos`}
@@ -142,6 +142,8 @@ export default function QuestionDisplay({
           seconds={timer.seconds}
           initialSeconds={30}
           isUrgent={timer.isUrgent}
+          size={112}
+          strokeWidth={7}
         />
       </div>
 
@@ -157,11 +159,11 @@ export default function QuestionDisplay({
             className="mb-8"
           >
             {/* Categoría - Menos prominente */}
-            <p className="text-yellow-400/80 font-medium text-sm sm:text-base lg:text-lg mb-3 text-left">
+            <p className="text-yellow-400/80 font-medium text-sm sm:text-lg mb-3 text-left">
               {question.category}
             </p>
             {/* Pregunta - Más prominente */}
-            <h2 className="text-white font-bold text-xl sm:text-2xl lg:text-3xl xl:text-4xl text-left leading-tight">
+            <h2 className="text-white font-bold text-xl sm:text-3xl xl:text-4xl text-left leading-tight break-words">
               {question.text}
             </h2>
           </motion.div>
@@ -184,7 +186,7 @@ export default function QuestionDisplay({
                     rounded-xl transition-all duration-500 transform
                     shadow-lg border-2
                     min-h-[64px] p-4 sm:p-5 lg:p-6
-                    text-base sm:text-lg lg:text-xl
+                    text-base sm:text-xl leading-snug
                     ${getEnhancedOptionStyle(option)}
                     ${!isAnswered && "hover:scale-[1.02] active:scale-[0.98] hover:shadow-2xl"}
                     ${isAnswered ? "cursor-not-allowed" : "cursor-pointer"}
@@ -195,7 +197,7 @@ export default function QuestionDisplay({
                   <span className={`
                     flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11
                     rounded-full flex items-center justify-center
-                    font-bold text-white text-sm sm:text-base
+                    font-bold text-white text-sm sm:text-lg
                     transition-colors duration-300
                     ${
                       answerState === "revealed" && option.correct
@@ -228,7 +230,7 @@ export default function QuestionDisplay({
                   </span>
 
                   {/* Texto de la opción */}
-                  <span className="flex-1">
+                  <span className="flex-1 break-words">
                     {option.text}
                   </span>
                 </button>
@@ -266,7 +268,7 @@ export default function QuestionDisplay({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.3 }}
-                      className="text-white/80 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto"
+                      className="text-white/80 text-sm sm:text-lg max-w-2xl mx-auto leading-snug"
                     >
                       {question.explanation}
                     </motion.p>

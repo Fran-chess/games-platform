@@ -77,7 +77,7 @@ export default function WaitingScreen() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="relative min-h-screen w-full bg-main-gradient overflow-hidden cursor-pointer"
+      className="relative min-h-screen w-full bg-game-gradient overflow-hidden cursor-pointer"
       style={{
         minHeight: '100dvh'
       }}

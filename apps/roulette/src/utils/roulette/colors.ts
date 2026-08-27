@@ -5,19 +5,18 @@
 
 /**
  * Paleta de colores oficial de DarSalud
- * Cada color representa una categoría específica del juego
  */
 export const ROULETTE_COLORS = {
-  AZUL_INTENSO: "#192A6E",    // Exclusivo para "Dar Salud"
-  VERDE_SALUD: "#5ACCC1",     // Seguridad y bioseguridad
-  CELESTE_MEDIO: "#40C0EF",   // Práctica profesional
-  AMARILLO_DS: "#F2BD35",     // Cuidado clínico
-  ROSADO_LILA: "#D5A7CD",     // Cuidar con empatía
+  AZUL_INTENSO: "#192A6E",
+  VERDE_SALUD: "#5ACCC1",
+  CELESTE_MEDIO: "#40C0EF",
+  AMARILLO_DS: "#F2BD35",
+  ROSADO_LILA: "#D5A7CD",
 } as const;
 
 /**
  * Array de colores disponibles para segmentos sin categoría específica
- * Excluye el azul intenso que es exclusivo de "Dar Salud"
+ * Excluye el azul intenso, reservado para las categorías que lo tienen asignado explícitamente
  */
 export const AVAILABLE_COLORS = [
   ROULETTE_COLORS.VERDE_SALUD,
@@ -27,48 +26,65 @@ export const AVAILABLE_COLORS = [
 ];
 
 /**
- * Mapeo de categorías específicas a sus colores designados
+ * Mapeo de categorías específicas a sus colores designados.
+ *
+ * Las 6 temáticas del congreso se dibujan en el orden en que aparecen en
+ * `questions.json`; el azul intenso se repite en dos segmentos no adyacentes
+ * (Autonomía y Salud cognitiva) para que ningún par de vecinos comparta color.
  */
 export const CATEGORY_COLOR_MAP: Record<string, string> = {
-  "Dar Salud": ROULETTE_COLORS.AZUL_INTENSO,
-  "Cuidar con empatía": ROULETTE_COLORS.ROSADO_LILA,
-  "Práctica profesional": ROULETTE_COLORS.CELESTE_MEDIO,
-  "Seguridad y bioseguridad": ROULETTE_COLORS.VERDE_SALUD,
-  "Cuidado clínico": ROULETTE_COLORS.AMARILLO_DS,
+  "Autonomía": ROULETTE_COLORS.AZUL_INTENSO,
+  "Movilidad": ROULETTE_COLORS.VERDE_SALUD,
+  "Alimentación": ROULETTE_COLORS.AMARILLO_DS,
+  "Salud cognitiva": ROULETTE_COLORS.AZUL_INTENSO,
+  "Red social y bienestar": ROULETTE_COLORS.CELESTE_MEDIO,
+  "Mitos": ROULETTE_COLORS.ROSADO_LILA,
 };
 
+/** Colores de texto candidatos para los títulos de los segmentos */
+export const SEGMENT_TEXT_COLORS = {
+  LIGHT: "#FFFFFF",
+  DARK: "#1E1E1E",
+} as const;
+
 /**
- * Calcula el color de contraste óptimo (blanco o negro) basado en la luminosidad
- * @param hexColor - Color en formato hexadecimal
- * @returns Color de contraste para texto (#FFFFFF o #1E1E1E)
+ * Luminancia relativa según WCAG 2.x (0 = negro, 1 = blanco)
+ * @param hexColor - Color en formato hexadecimal (#RRGGBB)
  */
-export function getContrastColor(hexColor: string): string {
-  // Remover el símbolo # si existe
+function getRelativeLuminance(hexColor: string): number {
   const color = hexColor.replace("#", "");
-
-  // Convertir hex a RGB
-  const r = parseInt(color.substr(0, 2), 16);
-  const g = parseInt(color.substr(2, 2), 16);
-  const b = parseInt(color.substr(4, 2), 16);
-
-  // Calcular luminosidad usando la fórmula YIQ
-  const luminosity = (r * 299 + g * 587 + b * 114) / 1000;
-
-  // Retornar color de contraste basado en el umbral
-  return luminosity >= 135 ? "#1E1E1E" : "#FFFFFF";
+  const channel = (offset: number) => {
+    const value = parseInt(color.substr(offset, 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
 }
 
 /**
- * Normaliza el nombre de una categoría para el mapeo de colores
- * @param category - Nombre de la categoría
- * @returns Categoría normalizada
+ * Ratio de contraste WCAG entre dos colores (1 = sin contraste, 21 = máximo)
  */
-export function normalizeCategory(category: string): string {
-  // Todas las categorías "Dar Salud" se mapean a "Dar Salud" para mantener el mismo color y nombre
-  if (category.startsWith("Dar Salud")) {
-    return "Dar Salud";
-  }
-  return category;
+function getContrastRatio(hexA: string, hexB: string): number {
+  const luminanceA = getRelativeLuminance(hexA);
+  const luminanceB = getRelativeLuminance(hexB);
+  const [lighter, darker] = luminanceA >= luminanceB
+    ? [luminanceA, luminanceB]
+    : [luminanceB, luminanceA];
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+/**
+ * Regla única de legibilidad para los segmentos: se usa el color de texto
+ * (blanco u oscuro) que tenga mayor ratio de contraste WCAG contra el fondo.
+ * Con la paleta actual: blanco sobre azul intenso (13:1) y oscuro sobre el
+ * resto (entre 7.9:1 y 9.6:1), ambos por encima del nivel AAA.
+ *
+ * @param hexColor - Color de fondo del segmento
+ * @returns Color de texto (#FFFFFF o #1E1E1E)
+ */
+export function getContrastColor(hexColor: string): string {
+  const withLight = getContrastRatio(hexColor, SEGMENT_TEXT_COLORS.LIGHT);
+  const withDark = getContrastRatio(hexColor, SEGMENT_TEXT_COLORS.DARK);
+  return withLight >= withDark ? SEGMENT_TEXT_COLORS.LIGHT : SEGMENT_TEXT_COLORS.DARK;
 }
 
 /**
@@ -77,6 +93,5 @@ export function normalizeCategory(category: string): string {
  * @returns Color hexadecimal o undefined si no tiene color específico
  */
 export function getCategoryColor(category: string): string | undefined {
-  const normalized = normalizeCategory(category);
-  return CATEGORY_COLOR_MAP[normalized];
+  return CATEGORY_COLOR_MAP[category.trim()];
 }

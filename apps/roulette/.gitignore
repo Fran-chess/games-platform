@@ -35,3 +35,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# material fuente del evento (PDFs de preguntas, briefs) y capturas de pantalla - no se versionan
+/material/
+/imagenes-captura/

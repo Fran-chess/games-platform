@@ -56,7 +56,4 @@ export interface GameStore {
 // Interface para props de componentes
 export interface RouletteWheelProps {
   questions: Question[];
-  onSpinStateChange?: (spinning: boolean) => void;
-  onCenterButtonClick?: () => void;
-  isSpinning?: boolean;
 }

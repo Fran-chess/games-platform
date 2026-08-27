@@ -1,281 +1,185 @@
 /**
- * Hook personalizado para manejar la lógica de la ruleta
- * Centraliza el estado y la lógica del componente
+ * Lógica de la ruleta: estado del giro, animación y resolución del ganador
+ *
+ * La animación vive fuera del ciclo de render de React: el estado por frame
+ * se guarda en refs y el loop de requestAnimationFrame llama a `render` con
+ * el frame calculado. React solo interviene al empezar y terminar el giro,
+ * a través de `phase`.
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useMemo, useRef, useCallback, useEffect, useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import type { Question } from '@/types';
+import type { Question, WheelSegment } from '@/types';
 import { audioService } from '@/services/audio/audioService';
+import type { FrameState } from '@/services/roulette/canvasRenderer';
 import {
-  type WheelSegment,
+  type SpinPlan,
+  WINNER_GLOW_CONFIG,
   createRouletteSegments,
-  type SpinState,
-  calculateTargetAngle,
-  updateSpinState,
+  createSpinPlan,
+  getSpinFrame,
+  getWinnerGlowIntensity,
+  pickWinnerIndex,
   calculateWinningSegment,
+  normalizeAngle,
   triggerVibration,
 } from '@/utils/roulette';
+
+/**
+ * Fase del giro. Tras `resolved` no se vuelve a `idle`: la página cambia de vista
+ * con el resultado y la ruleta se monta de nuevo en el próximo turno.
+ */
+type SpinPhase = 'idle' | 'spinning' | 'resolved';
 
 /**
  * Configuración del hook
  */
 interface UseRouletteLogicConfig {
   questions: Question[];
-  onSpinStateChange?: (isSpinning: boolean) => void;
+  /** Dibuja un frame. Se invoca desde el loop de animación. */
+  render: (frame: FrameState) => void;
 }
 
 /**
  * Retorno del hook
  */
 interface UseRouletteLogicReturn {
-  // Estado
   segments: WheelSegment[];
-  spinState: SpinState;
-  highlightedSegment: number | null;
-  winnerGlowIntensity: number;
-
-  // Acciones
+  phase: SpinPhase;
+  /** Inicia un giro. No hace nada si la ruleta no está en reposo o no hay segmentos. */
   startSpin: () => void;
-  updateAnimation: () => void;
-  handleMouseMove: (x: number, y: number, centerX: number, centerY: number) => void;
-  handleMouseLeave: () => void;
+  /** Frame actual, para redibujar fuera del loop (por ejemplo tras un resize) */
+  getFrame: () => FrameState;
 }
 
 /**
  * Hook para manejar toda la lógica de la ruleta
  */
-export function useRouletteLogic({
-  questions,
-  onSpinStateChange,
-}: UseRouletteLogicConfig): UseRouletteLogicReturn {
-  // Store de Zustand
-  const setLastSpinResultIndex = useGameStore(state => state.setLastSpinResultIndex);
-  const setLastSpinSegment = useGameStore(state => state.setLastSpinSegment);
-  const addRecentSpinSegment = useGameStore(state => state.addRecentSpinSegment);
-  const recentSpinSegments = useGameStore(state => state.recentSpinSegments);
+export function useRouletteLogic({ questions, render }: UseRouletteLogicConfig): UseRouletteLogicReturn {
+  const segments = useMemo(() => createRouletteSegments(questions), [questions]);
+  const [phase, setPhase] = useState<SpinPhase>('idle');
 
-  // Estado del giro
-  const [spinState, setSpinState] = useState<SpinState>({
-    isSpinning: false,
-    currentAngle: 0,
-    velocity: 0,
-    targetAngle: 0,
-    spinDuration: 0,
-    elapsedFrames: 0,
-  });
+  // Estado de animación (fuera de React)
+  const angleRef = useRef(0);
+  const planRef = useRef<SpinPlan | null>(null);
+  const glowStartRef = useRef<number | null>(null);
+  const winnerRef = useRef<number | null>(null);
+  const frameRequestRef = useRef<number | null>(null);
 
-  // Estado visual
-  const [highlightedSegment, setHighlightedSegment] = useState<number | null>(null);
-  const [winnerGlowIntensity, setWinnerGlowIntensity] = useState(0);
+  // Últimas versiones de props y segmentos, para que el loop nunca use closures viejas
+  const renderRef = useRef(render);
+  const segmentsRef = useRef(segments);
 
-  // Referencias
-  const animationFrameRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    renderRef.current = render;
+  }, [render]);
 
-  // Crear segmentos de la ruleta
-  const segments = createRouletteSegments(questions);
+  useEffect(() => {
+    segmentsRef.current = segments;
+    // El índice ganador deja de tener sentido si cambian los segmentos
+    winnerRef.current = null;
+  }, [segments]);
 
-  // Cleanup de animación
+  const buildFrame = useCallback((now: number): FrameState => ({
+    angleDeg: angleRef.current,
+    winnerSegment: winnerRef.current,
+    glowIntensity: glowStartRef.current === null
+      ? 0
+      : getWinnerGlowIntensity(now - glowStartRef.current),
+  }), []);
+
+  const getFrame = useCallback(() => buildFrame(performance.now()), [buildFrame]);
+
+  /**
+   * Cierra el giro: fija el ángulo final, resuelve el ganador y lo publica en el store
+   */
+  const completeSpin = useCallback((plan: SpinPlan, now: number) => {
+    const currentSegments = segmentsRef.current;
+
+    angleRef.current = normalizeAngle(plan.targetAngle);
+    planRef.current = null;
+
+    const winnerIndex = calculateWinningSegment(angleRef.current, currentSegments.length);
+    winnerRef.current = winnerIndex;
+    glowStartRef.current = now;
+
+    audioService.stopWheelSpinSound();
+    triggerVibration([100, 50, 100, 50, 200]);
+
+    const store = useGameStore.getState();
+    store.setLastSpinResultIndex(winnerIndex);
+    store.setLastSpinSegment(currentSegments[winnerIndex]);
+    store.addRecentSpinSegment(winnerIndex);
+
+    setPhase('resolved');
+  }, []);
+
+  /**
+   * Un paso del loop de animación. Se reprograma mientras haya giro o resplandor activos.
+   */
+  const tick = useCallback((now: number) => {
+    const plan = planRef.current;
+    if (plan) {
+      const spinFrame = getSpinFrame(plan, now);
+      angleRef.current = spinFrame.angle;
+      if (spinFrame.done) completeSpin(plan, now);
+    }
+
+    if (glowStartRef.current !== null && now - glowStartRef.current >= WINNER_GLOW_CONFIG.DURATION_MS) {
+      glowStartRef.current = null;
+    }
+
+    renderRef.current(buildFrame(now));
+
+    const isAnimating = planRef.current !== null || glowStartRef.current !== null;
+    frameRequestRef.current = isAnimating ? requestAnimationFrame(tick) : null;
+  }, [buildFrame, completeSpin]);
+
+  const startSpin = useCallback(() => {
+    const currentSegments = segmentsRef.current;
+    // Solo desde reposo: ni durante el giro ni mientras se muestra el resultado
+    // (un toque en esa ventana relanzaría el giro y cancelaría la pregunta pendiente)
+    if (planRef.current !== null || winnerRef.current !== null || currentSegments.length === 0) return;
+
+    const now = performance.now();
+    const store = useGameStore.getState();
+    const winnerIndex = pickWinnerIndex(currentSegments.length, store.recentSpinSegments);
+
+    // Invalidar el resultado anterior: los segmentos son objetos estables (memoizados),
+    // así que si vuelve a salir la misma categoría el store debe ver un cambio real.
+    store.setLastSpinResultIndex(null);
+    store.setLastSpinSegment(null);
+
+    planRef.current = createSpinPlan(angleRef.current, currentSegments.length, winnerIndex, now);
+    glowStartRef.current = null;
+
+    setPhase('spinning');
+    audioService.playWheelSpinSound();
+    triggerVibration([50, 30, 20]);
+
+    if (frameRequestRef.current === null) {
+      frameRequestRef.current = requestAnimationFrame(tick);
+    }
+  }, [tick]);
+
+  // Limpieza al desmontar: cortar el loop y el sonido si el giro quedó a medias
   useEffect(() => {
     return () => {
-      // Capturar el valor actual en una variable local
-      const frameId = animationFrameRef.current;
-      if (frameId) {
-        cancelAnimationFrame(frameId);
+      if (frameRequestRef.current !== null) {
+        cancelAnimationFrame(frameRequestRef.current);
+        frameRequestRef.current = null;
+      }
+      if (planRef.current !== null) {
+        planRef.current = null;
+        audioService.stopWheelSpinSound();
       }
     };
   }, []);
-
-  // Notificar cambios en el estado del giro
-  useEffect(() => {
-    onSpinStateChange?.(spinState.isSpinning);
-  }, [spinState.isSpinning, onSpinStateChange]);
-
-  /**
-   * Inicia el giro de la ruleta
-   */
-  const startSpin = useCallback(() => {
-    if (spinState.isSpinning || segments.length === 0) return;
-
-    // Limpiar efectos visuales previos
-    setHighlightedSegment(null);
-    setWinnerGlowIntensity(0);
-
-    // Calcular parámetros del giro (aleatorio, sin predeterminar ganador)
-    const targetAngle = calculateTargetAngle(3, 5);
-    const spinDuration = 120; // 2 segundos a 60fps
-
-    // Actualizar estado del giro
-    setSpinState({
-      isSpinning: true,
-      currentAngle: spinState.currentAngle,
-      velocity: 0,
-      targetAngle: spinState.currentAngle + targetAngle,
-      spinDuration,
-      elapsedFrames: 0,
-      initialAngle: spinState.currentAngle,
-    });
-
-    // Reproducir sonido de la ruleta desde archivo MP3
-    audioService.playWheelSpinSound();
-
-    // Vibración inicial
-    triggerVibration([50, 30, 20]);
-  }, [spinState.isSpinning, spinState.currentAngle, segments.length]);
-
-  /**
-   * Anima el efecto de glow del segmento ganador
-   */
-  const animateWinnerGlow = useCallback(() => {
-    let intensity = 0;
-    let increasing = true;
-    const maxIntensity = 0.6;
-    const step = 0.05;
-
-    const animate = () => {
-      if (increasing) {
-        intensity += step;
-        if (intensity >= maxIntensity) {
-          intensity = maxIntensity;
-          increasing = false;
-        }
-      } else {
-        intensity -= step;
-        if (intensity <= 0) {
-          intensity = 0;
-          return; // Terminar animación
-        }
-      }
-
-      setWinnerGlowIntensity(intensity);
-      requestAnimationFrame(animate);
-    };
-
-    animate();
-  }, []);
-
-  /**
-   * Maneja la finalización del giro
-   */
-  const handleSpinComplete = useCallback((finalAngle: number) => {
-    const winningIndex = calculateWinningSegment(finalAngle, segments.length);
-
-    if (winningIndex >= 0 && winningIndex < segments.length) {
-      // Evitar repetir el mismo segmento tres veces seguidas
-      const isRepeated = recentSpinSegments.length >= 2 &&
-        recentSpinSegments.every(idx => idx === winningIndex);
-
-      if (isRepeated) {
-        // Ajustar a un segmento diferente
-        const newIndex = (winningIndex + 1) % segments.length;
-        setLastSpinResultIndex(newIndex);
-        setLastSpinSegment(segments[newIndex]);
-        addRecentSpinSegment(newIndex);
-        setHighlightedSegment(newIndex);
-      } else {
-        setLastSpinResultIndex(winningIndex);
-        setLastSpinSegment(segments[winningIndex]);
-        addRecentSpinSegment(winningIndex);
-        setHighlightedSegment(winningIndex);
-      }
-
-      // Detener sonido de giro
-      audioService.stopWheelSpinSound();
-
-      // Animación de glow del ganador
-      animateWinnerGlow();
-
-      // Vibración de victoria
-      triggerVibration([100, 50, 100, 50, 200]);
-    }
-  }, [segments, recentSpinSegments, setLastSpinResultIndex, setLastSpinSegment, addRecentSpinSegment, animateWinnerGlow]);
-
-  /**
-   * Actualiza la animación del giro
-   */
-  const updateAnimation = useCallback(() => {
-    if (!spinState.isSpinning) return;
-
-    const newState = updateSpinState(spinState);
-    setSpinState(newState);
-
-    // NO reproducir sonido de tick - solo usamos el archivo MP3
-    // Comentado para usar solo el sonido del archivo MP3
-    // const segmentAngle = 360 / segments.length;
-    // if (shouldPlayTick(
-    //   newState.velocity,
-    //   segmentAngle,
-    //   lastTickAngleRef.current,
-    //   newState.currentAngle
-    // )) {
-    //   playTickSound(audioContextRef.current);
-    //   lastTickAngleRef.current = newState.currentAngle;
-    // }
-
-    // Si el giro terminó
-    if (!newState.isSpinning) {
-      handleSpinComplete(newState.currentAngle);
-    }
-  }, [spinState, segments.length, handleSpinComplete]);
-
-  /**
-   * Maneja el movimiento del mouse sobre la ruleta
-   */
-  const handleMouseMove = useCallback((
-    x: number,
-    y: number,
-    centerX: number,
-    centerY: number
-  ) => {
-    if (spinState.isSpinning) {
-      setHighlightedSegment(null);
-      return;
-    }
-
-    // Calcular distancia desde el centro
-    const dx = x - centerX;
-    const dy = y - centerY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const maxRadius = Math.min(centerX, centerY) * 0.8;
-
-    if (distance > maxRadius) {
-      setHighlightedSegment(null);
-      return;
-    }
-
-    // Calcular segmento bajo el cursor
-    let angle = Math.atan2(dy, dx);
-    angle = angle < 0 ? angle + 2 * Math.PI : angle;
-
-    const adjustedAngle = (angle - (spinState.currentAngle * Math.PI) / 180 + Math.PI / 2) % (2 * Math.PI);
-    const positiveAngle = adjustedAngle < 0 ? adjustedAngle + 2 * Math.PI : adjustedAngle;
-
-    const segmentAngle = (2 * Math.PI) / segments.length;
-    const segment = Math.floor(positiveAngle / segmentAngle) % segments.length;
-
-    setHighlightedSegment(segment);
-  }, [spinState.isSpinning, spinState.currentAngle, segments.length]);
-
-  /**
-   * Maneja cuando el mouse sale de la ruleta
-   */
-  const handleMouseLeave = useCallback(() => {
-    if (!spinState.isSpinning) {
-      setHighlightedSegment(null);
-    }
-  }, [spinState.isSpinning]);
 
   return {
-    // Estado
     segments,
-    spinState,
-    highlightedSegment,
-    winnerGlowIntensity,
-
-    // Acciones
+    phase,
     startSpin,
-    updateAnimation,
-    handleMouseMove,
-    handleMouseLeave,
+    getFrame,
   };
 }
