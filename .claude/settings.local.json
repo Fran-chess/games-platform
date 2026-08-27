@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm -v)",
+      "Bash(command -v vercel)",
+      "Bash(git config *)"
+    ]
+  }
+}
