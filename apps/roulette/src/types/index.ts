@@ -36,11 +36,15 @@ export interface GameStore {
   lastSpinSegment: WheelSegment | null;
   recentSpinSegments: number[];
   questions: Question[];
+  /** Ids de preguntas ya mostradas (cronológico). Sobrevive al cierre de la app. */
+  askedQuestionIds: string[];
   prizeFeedback: PrizeFeedback;
   showConfetti: boolean;
 
   setGameState: (state: GameState) => void;
   setCurrentQuestion: (question: Question | null) => void;
+  /** Elige la pregunta a mostrar para el segmento ganador, sin repetir las ya hechas */
+  drawQuestion: (segment: WheelSegment) => void;
   setLastSpinResultIndex: (index: number | null) => void;
   setLastSpinSegment: (segment: WheelSegment | null) => void;
   addRecentSpinSegment: (segmentIndex: number) => void;

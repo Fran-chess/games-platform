@@ -33,6 +33,9 @@ import type { RouletteWheelProps } from "@/types";
 /** Variable CSS que fija el diámetro visible del botón central (la lee `.spin-button`) */
 const SPIN_BUTTON_SIZE_VAR = "--spin-button-size";
 
+/** Variable CSS con el diámetro de la rueda, para el aro que respira a su alrededor (`.wheel-pulse`) */
+const WHEEL_SIZE_VAR = "--wheel-size";
+
 /** El arco del botón dura lo mismo que el giro, con la misma desaceleración (ver `.spin-button` en globals.css) */
 const SPIN_BUTTON_STYLE = { "--spin-duration": `${SPIN_CONFIG.DURATION_MS}ms` } as React.CSSProperties;
 
@@ -79,8 +82,9 @@ const RouletteWheel = memo(function RouletteWheel({ questions }: RouletteWheelPr
     geometryRef.current = geometry;
     layersRef.current = layers;
 
-    // El botón se dimensiona desde la misma geometría que el canvas, así nunca se desalinean
+    // Botón y aro se dimensionan desde la misma geometría que el canvas, así nunca se desalinean
     container.style.setProperty(SPIN_BUTTON_SIZE_VAR, `${geometry.centerButtonDiameter}px`);
+    container.style.setProperty(WHEEL_SIZE_VAR, `${geometry.radius * 2}px`);
 
     draw(getFrame());
   }, [segments, draw, getFrame]);
@@ -120,6 +124,9 @@ const RouletteWheel = memo(function RouletteWheel({ questions }: RouletteWheelPr
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
+      {/* Va antes del canvas: nace oculto bajo el borde de la rueda y emerge al expandirse */}
+      {segments.length > 0 && <div className="wheel-pulse" aria-hidden="true" />}
+
       <canvas
         ref={canvasRef}
         role="img"

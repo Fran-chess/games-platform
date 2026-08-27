@@ -27,6 +27,8 @@ const VISUAL_CONFIG = {
   CENTER_BUTTON_RATIO: 0.19,
   /** Grosor del borde exterior */
   OUTER_BORDER_WIDTH: 8,
+  /** Grosor del halo del ganador, por fuera del borde exterior */
+  WINNER_HALO_WIDTH: 14,
   /** Tamaño del puntero */
   ARROW_SIZE: 25,
   /** Separación del puntero respecto del borde */
@@ -44,8 +46,7 @@ const THEME_COLORS = {
   ARROW: '#D93A2B',
   ARROW_SHADOW: 'rgba(217, 58, 43, 0.5)',
   SEGMENT_BORDER: '#FFFFFF',
-  WINNER_GLOW: 'rgba(255, 215, 0, 0.6)',
-  WINNER_STROKE: '#FFD700',
+  WINNER: '#FFD700',
 } as const;
 
 /**
@@ -240,7 +241,9 @@ export function renderFrame(
 }
 
 /**
- * Resplandor del segmento ganador sobre la rueda ya rotada (coordenadas locales, origen en el centro)
+ * Realce del segmento ganador sobre la rueda ya rotada (coordenadas locales, origen en el centro).
+ * Solo contorno y halo exterior: nunca se pinta sobre el título, así la legibilidad del
+ * segmento ganador es la misma que en reposo.
  */
 function drawWinnerGlow(
   ctx: CanvasRenderingContext2D,
@@ -251,19 +254,24 @@ function drawWinnerGlow(
 ): void {
   const { startAngle, endAngle } = getSegmentArc(index, segmentCount);
 
+  ctx.globalAlpha = glowIntensity;
+  ctx.strokeStyle = THEME_COLORS.WINNER;
+
+  // Contorno del segmento; el grosor máximo (6px) no llega a la banda de texto
   ctx.beginPath();
   ctx.moveTo(0, 0);
   ctx.arc(0, 0, radius, startAngle, endAngle);
   ctx.closePath();
-
-  ctx.globalAlpha = glowIntensity * 0.7;
-  ctx.fillStyle = THEME_COLORS.WINNER_GLOW;
-  ctx.fill();
-
-  ctx.globalAlpha = glowIntensity;
-  ctx.strokeStyle = THEME_COLORS.WINNER_STROKE;
-  ctx.lineWidth = 4 + glowIntensity * 6;
+  ctx.lineWidth = 3 + glowIntensity * 3;
   ctx.stroke();
+
+  // Halo por fuera del borde exterior, solo sobre el arco del ganador
+  const haloRadius = radius + VISUAL_CONFIG.OUTER_BORDER_WIDTH / 2 + VISUAL_CONFIG.WINNER_HALO_WIDTH / 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, haloRadius, startAngle, endAngle);
+  ctx.lineWidth = VISUAL_CONFIG.WINNER_HALO_WIDTH;
+  ctx.stroke();
+
   ctx.globalAlpha = 1;
 }
 

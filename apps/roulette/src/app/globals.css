@@ -199,12 +199,42 @@
     visibility: hidden;
   }
 
+  /* Aro que respira alrededor de la rueda, en todo momento (reposo y giro). Mismo ritmo que el
+     del botón para que lean como un solo sistema. Se dibuja detrás del canvas: en escala 1
+     queda bajo el borde de la rueda y emerge al crecer. La expansión máxima (1.12) está
+     calculada para que con la rueda de 686 px no se salga de los 800 px de la tablet. */
+  .wheel-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    width: var(--wheel-size, 0px);
+    height: var(--wheel-size, 0px);
+    border-radius: 50%;
+    border: 3px solid #FFFFFF;
+    pointer-events: none;
+    will-change: transform, opacity;
+    animation: wheel-pulse 2.4s ease-out infinite;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .spin-button::before,
-    .spin-button__disc::after {
+    .spin-button__disc::after,
+    .wheel-pulse {
       animation: none;
       visibility: hidden;
     }
+  }
+}
+
+@keyframes wheel-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  to {
+    transform: scale(1.12);
+    opacity: 0;
   }
 }
 

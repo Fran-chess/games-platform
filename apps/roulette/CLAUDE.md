@@ -50,6 +50,8 @@ Diseñada para costo mínimo por frame (la tablet objetivo corre a 90 Hz):
   central **GIRAR**, que es un `<button>` del DOM superpuesto (no se dibuja en el canvas).
   Su diámetro llega por la variable CSS `--spin-button-size`, fijada desde la misma
   geometría del canvas; los estilos y estados viven en `.spin-button` (`globals.css`).
+  El aro que respira alrededor de la rueda (`.wheel-pulse`, siempre activo por decisión del
+  cliente) usa `--wheel-size` del mismo origen.
 
 Reglas:
 - Nada que se ejecute por frame debe crear gradientes, medir texto ni usar `shadowBlur`.
@@ -68,6 +70,11 @@ Reglas:
 - Cada `category` distinta es un segmento, en el orden en que aparece en el JSON. Los colores
   por categoría están en `CATEGORY_COLOR_MAP` (`utils/roulette/colors.ts`); vecinos no deben
   repetir color.
+- **Sin repetir preguntas**: si la ruleta vuelve a caer en una categoría, sale una pregunta
+  que todavía no se mostró (`utils/questionRotation.ts`). Agotado el pool de la categoría,
+  se reinicia el ciclo sin repetir la última. El historial (`askedQuestionIds`) se persiste en
+  `localStorage` (`darsalud-roulette-progress`) para que sobreviva a cerrar la app; para otro
+  evento con ids reutilizados, subir `PROGRESS_VERSION` en `store/gameStore.ts`.
 - El material fuente del evento (PDF de preguntas) va en `apps/roulette/material/` y las
   capturas en `apps/roulette/imagenes-captura/`; ambas carpetas están en `.gitignore`.
 - Las respuestas correctas se transcriben **exactamente** como las marca el material del

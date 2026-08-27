@@ -16,30 +16,15 @@ export default function GamePage() {
   // Refs para evitar requests múltiples
   const loadingQuestionsRef = useRef(false);
   
-  // Zustand (GameStore)
+  // Zustand (GameStore). Las acciones son referencias estables: se usan directo en los efectos
   const gameState = useGameStore((state) => state.gameState);
   const setGameState = useGameStore((state) => state.setGameState);
-  const lastSpinResultIndex = useGameStore((state) => state.lastSpinResultIndex);
   const lastSpinSegment = useGameStore((state) => state.lastSpinSegment);
-  const setCurrentQuestion = useGameStore((state) => state.setCurrentQuestion);
+  const drawQuestion = useGameStore((state) => state.drawQuestion);
   const questions = useGameStore((state) => state.questions);
   const setQuestions = useGameStore((state) => state.setQuestions);
   const currentQuestion = useGameStore((state) => state.currentQuestion);
-  
-  // Refs para funciones
-  const setQuestionsRef = useRef(setQuestions);
-  const setGameStateRef = useRef(setGameState);
-  const setCurrentQuestionRef = useRef(setCurrentQuestion);
-  const questionsRef = useRef(questions);
-  
-  // Actualizar refs cuando cambien las funciones
-  useEffect(() => {
-    setQuestionsRef.current = setQuestions;
-    setGameStateRef.current = setGameState;
-    setCurrentQuestionRef.current = setCurrentQuestion;
-    questionsRef.current = questions;
-  }, [setQuestions, setGameState, setCurrentQuestion, questions]);
-  
+
   // Cargar preguntas al inicio desde el archivo JSON
   useEffect(() => {
     if (!loadingQuestionsRef.current && (!questions || questions.length === 0)) {
@@ -48,7 +33,7 @@ export default function GamePage() {
           loadingQuestionsRef.current = true;
           // Importar directamente el archivo JSON
           const questionsData = await import('@/data/questions.json');
-          setQuestionsRef.current(questionsData.default || []);
+          setQuestions(questionsData.default || []);
         } finally {
           setIsLoading(false);
           setTimeout(() => {
@@ -61,23 +46,21 @@ export default function GamePage() {
     } else {
       setIsLoading(false);
     }
-  }, [questions]);
-  
-  // Al girar la ruleta, mostrar una pregunta aleatoria del segmento ganador
+  }, [questions, setQuestions]);
+
+  // Al girar la ruleta, mostrar una pregunta del segmento ganador sin repetir las ya hechas
   useEffect(() => {
     if (!lastSpinSegment || lastSpinSegment.questions.length === 0) return;
 
-    const segmentQuestions = lastSpinSegment.questions;
-    const questionToSet = segmentQuestions[Math.floor(Math.random() * segmentQuestions.length)];
-
-    // Delay para que se vea el resplandor del segmento ganador antes de la transición
+    // Delay para que se vea el resplandor del segmento ganador antes de la transición.
+    // La pregunta se elige recién acá: si el giro se cancela antes, no se gasta del pool.
     const timer = setTimeout(() => {
-      setCurrentQuestionRef.current(questionToSet);
-      setGameStateRef.current("question");
+      drawQuestion(lastSpinSegment);
+      setGameState("question");
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [lastSpinSegment]);
+  }, [lastSpinSegment, drawQuestion, setGameState]);
 
   // Loading
   if (isLoading) {

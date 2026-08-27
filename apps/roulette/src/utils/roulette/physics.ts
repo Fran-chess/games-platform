@@ -31,8 +31,8 @@ export const SPIN_CONFIG = {
 export const WINNER_GLOW_CONFIG = {
   /** Duración total (subida y bajada) en ms */
   DURATION_MS: 700,
-  /** Intensidad máxima (0 a 1) */
-  MAX_INTENSITY: 0.6,
+  /** Intensidad máxima (0 a 1). El realce es solo contorno y halo, nunca un velo sobre el título */
+  MAX_INTENSITY: 0.85,
 } as const;
 
 /**
