@@ -55,7 +55,7 @@ This is a **Turborepo + PNPM monorepo** containing multiple game applications an
 
 ### Apps
 - **`apps/roulette`** (port 3000): Interactive roulette game with question system, originally migrated from a standalone project. Features canvas-based wheel rendering, physics simulation, and audio management.
-- **`apps/memotest`** (port 3001): Memory test game with card matching mechanics, memorization phases, and prize selection.
+- **`apps/memotest`** (port 3001): Memory test game with card matching mechanics, memorization phases, and prize selection. The store drives the whole round and all animation is CSS (see `apps/memotest/CLAUDE.md`).
 
 ### Shared Packages
 - **`@games-platform/ui`**: Minimal shared UI package containing only `MassiveConfetti` component (used by both games for victory celebrations)
@@ -67,8 +67,8 @@ This is a **Turborepo + PNPM monorepo** containing multiple game applications an
 - **Language**: TypeScript with strict mode
 - **Styling**: Tailwind CSS v4 with PostCSS
 - **State Management**: Zustand for global state
-- **Animations**: Framer Motion for UI transitions
-- **Icons**: Heroicons and React Icons
+- **Animations**: Framer Motion for UI transitions in roulette; memotest uses CSS only
+- **Icons**: Heroicons in roulette; memotest has its own inline SVG set
 
 ### Key Architectural Patterns
 
@@ -143,7 +143,7 @@ If a component is only used by one game, keep it in that game's `src/components/
 Both games have comprehensive performance testing with Playwright measuring FPS, memory usage, load times, and Core Web Vitals:
 - Run tests: `pnpm test:perf` (requires `pnpm build:perf` first)
 - View results: `benchmarks/PERFORMANCE_REPORT.md`
-- Current benchmarks: 60 FPS, <2s load times, 0 memory leaks
+- Memotest tests play real rounds and report frame pacing, long tasks, JS weight and heap growth, compared against `benchmarks/memotest-before.json`
 - See [PERFORMANCE_TESTING.md](./PERFORMANCE_TESTING.md) for complete documentation
 
 ### Architecture Philosophy

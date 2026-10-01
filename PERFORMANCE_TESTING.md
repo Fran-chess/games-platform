@@ -140,16 +140,16 @@ games-platform/
 │   ├── memotest.spec.ts         # Tests de Memotest
 │   ├── roulette.spec.ts         # Tests de Roulette
 │   ├── helpers/
-│   │   └── performance.ts       # Utilidades (measureFPS, measureMemory)
+│   │   └── performance.ts       # Utilidades (frames, long tasks, heap, peso de JS)
 │   └── reporters/
 │       └── performance-reporter.ts  # Reporter personalizado
 ├── benchmarks/
 │   ├── results/                 # JSONs con métricas capturadas
-│   │   ├── memotest-fps.json
+│   │   ├── memotest-round-win.json
 │   │   ├── roulette-load.json
 │   │   └── ...
-│   ├── memotest-baseline.json   # Valores de referencia
-│   ├── roulette-baseline.json
+│   ├── memotest-before.json     # Corrida de referencia del memotest (el reporte compara contra ella)
+│   ├── roulette-baseline.json   # Valores de referencia
 │   └── PERFORMANCE_REPORT.md    # Reporte generado automáticamente
 ├── playwright.config.ts          # Configuración de Playwright
 ├── lighthouserc.js              # Configuración de Lighthouse CI
@@ -206,9 +206,9 @@ NEXT_PUBLIC_ENABLE_PERF_MONITORING=true
 **Formato:**
 ```markdown
 ## Memotest
-| Metric | Value | Status |
-|--------|-------|--------|
-| FPS (flip) | 60.3 | ✅ |
+| Metric | Before | Now |
+|--------|--------|-----|
+| Tap to cards visible | 4168ms | … |
 
 ## Roulette
 | Metric | Value | Status |
@@ -216,23 +216,40 @@ NEXT_PUBLIC_ENABLE_PERF_MONITORING=true
 | Load Time | 1085ms | ✅ |
 ```
 
+La tabla del memotest muestra la columna **Before** cuando existe
+`benchmarks/memotest-before.json`: una corrida guardada de los mismos tests sobre una versión
+anterior del juego.
+
 ---
 
 ## Métricas Capturadas
 
 ### Memotest
 
-| Métrica | Descripción | Threshold |
-|---------|-------------|-----------|
-| **FPS (flip)** | Frames por segundo durante animación de volteo de cartas | > 45 FPS |
-| **FPS (stress)** | FPS bajo múltiples interacciones | > 40 FPS |
-| **Memory Increase** | Incremento de memoria después de múltiples juegos | < 15 MB |
-| **Memory (before/after)** | Memoria antes y después de interacciones | Info |
+Los tests juegan partidas reales: tocan la pantalla de espera, leen los pares durante la
+memorización, juegan una partida ganada y una perdida, y cinco partidas seguidas. Corren con
+el viewport de la tablet (1280×800, DPR 1.5) y la CPU frenada ×4.
+
+| Métrica | Descripción |
+|---------|-------------|
+| **Load time, LCP, FCP** | Carga hasta que la pantalla de espera es visible (< 5 s, LCP < 4 s) |
+| **JavaScript transferred / parsed** | Peso de los scripts que baja la página |
+| **Tap to cards visible** | Del toque inicial a ver las cartas para memorizar |
+| **Frame p95 / worst frame** | Intervalo entre frames del hilo principal (percentil 95 y máximo) |
+| **Janky frames** | Frames que tardaron más del doble de la mediana |
+| **Long tasks** | Bloqueos del hilo principal de más de 50 ms (suma) |
+| **localStorage writes per round** | Escrituras a localStorage en una partida |
+| **Heap growth after 5 rounds** | Crecimiento del heap tras forzar garbage collection (< 15 MB) |
+
+Las métricas de frames y long tasks se informan como **mediana de 3 partidas** y no tienen
+umbral: en una PC de escritorio el mismo build varía varias veces entre corridas. Sirven para
+comparar un reporte contra otro, corriendo los dos en la misma máquina.
 
 **Archivos generados:**
-- `memotest-fps.json`
+- `memotest-load.json`
+- `memotest-round-win.json`
+- `memotest-round-loss.json`
 - `memotest-memory.json`
-- `memotest-stress.json`
 
 ### Roulette
 
@@ -285,10 +302,10 @@ NEXT_PUBLIC_ENABLE_PERF_MONITORING=true
 
 ```markdown
 ## Memotest
-| Metric | Value | Status |
-|--------|-------|--------|
-| FPS (flip) | 60.3 | ✅ |
-| Memory Increase | 0.0MB | ✅ |
+| Metric | Before | Now |
+|--------|--------|-----|
+| Winning round: long tasks (total) | 389ms | … |
+| Heap growth after 5 rounds | 1.7MB | … |
 ```
 
 **Estados:**
@@ -325,7 +342,6 @@ Los tests corren en **headless Chrome**, que tiene aproximadamente:
 
 Por eso:
 - FPS threshold: 45 en headless ≈ 55-60 en real
-- Algunos tests se skippean (ej: memotest load time)
 
 ---
 
@@ -400,8 +416,9 @@ pnpm test:perf
 
 # 3. Si son mejores, actualizar baselines
 # Editar manualmente:
-#   - benchmarks/memotest-baseline.json
 #   - benchmarks/roulette-baseline.json
+# Memotest: copiar los benchmarks/results/memotest-*.json a benchmarks/memotest-before.json
+# (un objeto con una clave por archivo) para que el próximo reporte compare contra esta corrida
 ```
 
 **Ejemplo de baseline:**
@@ -435,8 +452,8 @@ md += `| FPS (flip) | ${fps.toFixed(1)} | ${fps > 50 ? '✅' : '❌'} |\n`;
 ### Rendimiento Actual
 
 **Memotest:**
-- FPS actual: 60 (headless) → ~55-60 (real)
-- Margen: ✅ Bajo - medio
+- Todas las animaciones son CSS de `transform`/`opacity` (compositor); no hay trabajo por frame en JavaScript
+- Margen: ✅ Medio, mientras lo nuevo siga las reglas de `apps/memotest/CLAUDE.md`
 
 **Roulette:**
 - FPS actual: 60 (headless) → ~55-60 (real)
