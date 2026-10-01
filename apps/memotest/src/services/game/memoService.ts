@@ -76,8 +76,11 @@ export const PRIZE_REVEAL_MS = PRIZE_FLIP_MS + 400;
 /** Pausa entre los pasos de la revelación cuando la carta elegida no tenía premio */
 export const PRIZE_STEP_MS = 1500;
 
-/** Duración del confetti al ganar el premio */
-export const CONFETTI_MS = 4000;
+/**
+ * Tiempo que se mantiene montado el confetti al ganar el premio. react-confetti emite las
+ * piezas durante 5 s y tardan unos 3 s más en caer: con menos tiempo desaparecen en el aire.
+ */
+export const CONFETTI_MS = 8000;
 
 /** Inactividad en Premio o Derrota tras la que el juego vuelve solo a la pantalla de espera */
 export const IDLE_RETURN_MS = 20000;

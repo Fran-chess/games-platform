@@ -63,7 +63,6 @@ function HudTimer({ phase }: PhaseProps) {
       seconds={timeLeft}
       totalSeconds={isMemorizing ? GAME_CONFIG.memorizationTime : GAME_CONFIG.gameTime}
       isUrgent={phase === 'playing' && timeLeft <= GAME_CONFIG.urgentTime}
-      size={80}
     />
   );
 }
@@ -116,9 +115,7 @@ const CardGrid = memo(function CardGrid() {
   return (
     <div className="grid grid-cols-6 grid-rows-2 gap-x-6 gap-y-8 md:gap-x-8 md:gap-y-10 w-full">
       {cardOrder.map((cardId) => (
-        <div key={cardId} className="aspect-[3/4]">
-          <MemoCard cardId={cardId} />
-        </div>
+        <MemoCard key={cardId} cardId={cardId} />
       ))}
     </div>
   );

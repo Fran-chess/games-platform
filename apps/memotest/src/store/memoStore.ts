@@ -124,6 +124,27 @@ function cancelPending(): void {
   clockService.stop();
 }
 
+// ============= CAMBIOS DE PANTALLA =============
+// screenTransition aplica el cambio de estado un frame después: el navegador primero captura
+// la pantalla actual. En esa ventana el estado todavía es el de la pantalla que se va, así que
+// las acciones ignoran los toques (se resolverían contra una pantalla que ya no cuenta) y lo
+// que depende de la pantalla nueva se programa recién cuando el cambio se aplica.
+// Es un contador y no un booleano porque dos cambios pueden encimarse.
+
+let pendingScreenChanges = 0;
+
+function changeScreen(update: () => void): void {
+  pendingScreenChanges++;
+  screenTransition(() => {
+    pendingScreenChanges--;
+    update();
+  });
+}
+
+function isChangingScreen(): boolean {
+  return pendingScreenChanges > 0;
+}
+
 function vibrate(pattern: number | number[]): void {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     navigator.vibrate(pattern);
@@ -172,17 +193,19 @@ export const useMemoStore = create<MemoStore>()(
       };
 
       const enterPrize = () => {
-        screenTransition(() =>
-          set({ gameState: 'prize', prizeCards: createPrizeCards() })
-        );
-        armIdleReturn();
+        changeScreen(() => {
+          set({ gameState: 'prize', prizeCards: createPrizeCards() });
+          armIdleReturn();
+        });
       };
 
       const enterFailed = () => {
         cancelPending();
         audioService.playDefeat();
-        screenTransition(() => set({ gameState: 'failed', isBoardLocked: true }));
-        armIdleReturn();
+        changeScreen(() => {
+          set({ gameState: 'failed', isBoardLocked: true });
+          armIdleReturn();
+        });
       };
 
       /**
@@ -221,6 +244,8 @@ export const useMemoStore = create<MemoStore>()(
             schedule(enterPrize, SUCCESS_HOLD_MS);
           } else {
             audioService.playMatch();
+            // Con las reglas actuales no se llega a perder con un acierto (dos errores ya
+            // pierden antes); queda cubierto por si cambia GAME_CONFIG.
             if (outcome === 'lost') {
               schedule(enterFailed, MISMATCH_HOLD_MS);
             }
@@ -255,11 +280,13 @@ export const useMemoStore = create<MemoStore>()(
         ...INITIAL_STATE,
 
         startGame: () => {
+          if (isChangingScreen()) return;
+
           cancelPending();
           audioService.playStart();
 
           const cards = createCards();
-          screenTransition(() =>
+          changeScreen(() => {
             set({
               ...INITIAL_STATE,
               gameState: 'ready',
@@ -267,17 +294,16 @@ export const useMemoStore = create<MemoStore>()(
               cardOrder: cards.map((card) => card.id),
               // El anillo del reloj aparece lleno cuando empieza la memorización
               timeLeft: GAME_CONFIG.memorizationTime,
-            })
-          );
-
-          schedule(beginMemorizing, GAME_CONFIG.readyTime * 1000);
+            });
+            schedule(beginMemorizing, GAME_CONFIG.readyTime * 1000);
+          });
         },
 
         flipCard: (cardId) => {
           const state = get();
           const card = state.cardsById[cardId];
 
-          if (state.gameState !== 'playing' || state.isBoardLocked) return;
+          if (isChangingScreen() || state.gameState !== 'playing' || state.isBoardLocked) return;
           if (!card || card.isFlipped || card.isMatched) return;
 
           audioService.playFlip();
@@ -301,6 +327,7 @@ export const useMemoStore = create<MemoStore>()(
           const state = get();
           const card = state.prizeCards.find((prizeCard) => prizeCard.id === cardId);
 
+          if (isChangingScreen()) return;
           if (state.gameState !== 'prize' || state.prizeStage !== 'choosing' || !card) return;
 
           audioService.playPrizeSelect();
@@ -331,14 +358,16 @@ export const useMemoStore = create<MemoStore>()(
 
         keepAlive: () => {
           const { gameState } = get();
-          if (gameState === 'prize' || gameState === 'failed') {
+          if (!isChangingScreen() && (gameState === 'prize' || gameState === 'failed')) {
             armIdleReturn();
           }
         },
 
         resetGame: () => {
+          if (isChangingScreen()) return;
+
           cancelPending();
-          screenTransition(() => set(INITIAL_STATE));
+          changeScreen(() => set(INITIAL_STATE));
         },
       };
     },

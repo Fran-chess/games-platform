@@ -31,6 +31,13 @@
     cursor: pointer;
     touch-action: manipulation;
   }
+
+  /* En Android, una pulsación larga sobre una imagen abre el menú de Chrome (descargar,
+     compartir). Todas las imágenes del juego son decorativas o están dentro de un botón,
+     así que no necesitan recibir toques. */
+  img {
+    pointer-events: none;
+  }
 }
 
 @layer components {
@@ -67,12 +74,13 @@
        cualquiera de ellos aplana el 3D y se verían las dos caras a la vez.
      - will-change fijo: cada carta tiene su capa desde el inicio (~350 KB por capa en la
        tablet), en vez de crearla y destruirla en cada giro.
-     La duración llega por --flip-ms desde el componente, que la toma de memoService. */
+     La duración llega por --flip-ms desde el componente, que la toma de memoService.
+     El alto lo da cada uso con aspect-ratio sobre el mismo botón: las caras son absolutas
+     y no aportan altura. */
   .flip-card {
     display: block;
     position: relative;
     width: 100%;
-    height: 100%;
     perspective: 1200px;
     transition: scale 150ms ease-out, opacity 300ms ease-out;
   }

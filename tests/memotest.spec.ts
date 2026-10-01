@@ -35,11 +35,15 @@ async function openWaitingScreen(page: Page) {
  */
 async function startRound(page: Page): Promise<number> {
   const waitingScreen = page.locator('[data-testid="waiting-screen"]');
+  const gameRoot = page.locator('[data-testid="game"]');
   let tapTime = 0;
   await expect(async () => {
-    tapTime = Date.now();
-    await waitingScreen.click({ timeout: 2000 });
-    await expect(page.locator('[data-testid="game"]')).toBeAttached({ timeout: 2000 });
+    // Only tap while the waiting screen is still there: a tap that worked removes it
+    if ((await gameRoot.count()) === 0 && (await waitingScreen.count()) > 0) {
+      tapTime = Date.now();
+      await waitingScreen.click({ timeout: 2000 });
+    }
+    await expect(gameRoot).toBeAttached({ timeout: 2000 });
   }).toPass({ timeout: 30_000 });
   return tapTime;
 }
@@ -66,8 +70,8 @@ async function flipPair(page: Page, [first, second]: number[]) {
 
 /**
  * Resolves once the card has been face up and is face down again (a wrong pair flipping back).
- * Observed inside the page: the card is face up for well under a second, too short to poll
- * from the test under CPU throttling. Start it before tapping the cards.
+ * Observed inside the page: the card is face up for about a second, too short to poll
+ * reliably from the test under CPU throttling. Start it before tapping the cards.
  */
 function watchFlipBack(page: Page, index: number): Promise<void> {
   return page.evaluate((cardIndex) => {

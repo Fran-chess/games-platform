@@ -49,41 +49,39 @@ function PrizeChoice() {
               className="enter-up flex flex-col items-center gap-4"
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              <div className="w-full aspect-[2/3]">
-                <button
-                  type="button"
-                  data-testid="prize-card"
-                  className={`flip-card prize-card ${isFaceUp ? 'scale-105' : ''} ${isDimmed ? 'opacity-40' : ''}`}
-                  data-flipped={isFaceUp}
-                  disabled={hasChosen}
-                  aria-label="Carta de premio"
-                  onClick={() => useMemoStore.getState().pickPrizeCard(card.id)}
-                >
-                  <span className="flip-card__inner">
-                    {/* Dorso */}
-                    <span className="flip-card__face bg-white/10 ring-2 ring-inset ring-cyan-400/50 shadow-lg p-8">
-                      <img src="/images/8.svg" alt="" className="w-full h-full object-contain" draggable={false} />
-                    </span>
-
-                    {/* Frente */}
-                    {card.hasPrize ? (
-                      <span className="flip-card__face flip-card__face--front bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 ring-2 ring-inset ring-emerald-300/60 shadow-lg p-8">
-                        <img src="/images/13.svg" alt="¡Ganaste!" className="w-[90%] h-[90%] object-contain" draggable={false} />
-                      </span>
-                    ) : (
-                      <span className="flip-card__face flip-card__face--front flex-col gap-6 bg-gradient-to-br from-cyan-100 via-blue-100 to-teal-100 ring-2 ring-inset ring-cyan-400/70 shadow-lg p-8">
-                        <img src="/images/8.svg" alt="" className="w-28 h-28 object-contain" draggable={false} />
-                        <span className="text-3xl font-black text-slate-800 tracking-tight leading-tight text-center">
-                          Seguí
-                          <br />
-                          participando
-                        </span>
-                        <span className="text-4xl">💪</span>
-                      </span>
-                    )}
+              <button
+                type="button"
+                data-testid="prize-card"
+                className={`flip-card prize-card aspect-[2/3] ${isFaceUp ? 'scale-105' : ''} ${isDimmed ? 'opacity-40' : ''}`}
+                data-flipped={isFaceUp}
+                disabled={hasChosen}
+                aria-label="Carta de premio"
+                onClick={() => useMemoStore.getState().pickPrizeCard(card.id)}
+              >
+                <span className="flip-card__inner">
+                  {/* Dorso */}
+                  <span className="flip-card__face bg-white/10 ring-2 ring-inset ring-cyan-400/50 shadow-lg p-8">
+                    <img src="/images/8.svg" alt="" className="w-full h-full object-contain" />
                   </span>
-                </button>
-              </div>
+
+                  {/* Frente */}
+                  {card.hasPrize ? (
+                    <span className="flip-card__face flip-card__face--front bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 ring-2 ring-inset ring-emerald-300/60 shadow-lg p-8">
+                      <img src="/images/13.svg" alt="¡Ganaste!" className="w-[90%] h-[90%] object-contain" />
+                    </span>
+                  ) : (
+                    <span className="flip-card__face flip-card__face--front flex-col gap-6 bg-gradient-to-br from-cyan-100 via-blue-100 to-teal-100 ring-2 ring-inset ring-cyan-400/70 shadow-lg p-8">
+                      <img src="/images/8.svg" alt="" className="w-28 h-28 object-contain" />
+                      <span className="text-3xl font-black text-slate-800 tracking-tight leading-tight text-center">
+                        Seguí
+                        <br />
+                        participando
+                      </span>
+                      <span className="text-4xl">💪</span>
+                    </span>
+                  )}
+                </span>
+              </button>
 
               <p
                 className={`text-sm font-bold tracking-wide transition-colors duration-200 ${

@@ -18,7 +18,11 @@ export function screenTransition(update: () => void): void {
 
   // flushSync: el DOM tiene que estar actualizado cuando el callback termina,
   // porque ahí el navegador captura la vista nueva
-  document.startViewTransition(() => {
+  const transition = document.startViewTransition(() => {
     flushSync(update);
   });
+
+  // Si el navegador saltea el fundido (pantalla apagada, otro cambio encima) rechaza `ready`.
+  // No es un error: `update` se ejecuta igual y el cambio queda como un corte.
+  transition.ready.catch(() => {});
 }

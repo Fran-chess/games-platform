@@ -20,7 +20,6 @@ export function WaitingScreen({ onStart }: WaitingScreenProps) {
           src="/images/8.svg"
           alt="DarSalud"
           className="waiting-logo w-[32rem] h-[32rem] object-contain"
-          draggable={false}
         />
       </div>
 

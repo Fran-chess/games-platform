@@ -13,49 +13,43 @@ interface TimerCircleProps {
   totalSeconds: number;
   /** Si el timer está en estado urgente */
   isUrgent: boolean;
-  /** Diámetro del círculo en píxeles; la tipografía escala con él */
-  size?: number;
-  /** Grosor del trazo en píxeles */
-  strokeWidth?: number;
 }
 
-/** Tamaño de fuente del número como fracción del diámetro (dos dígitos entran con margen) */
-const FONT_SIZE_RATIO = 0.42;
+/** Diámetro en píxeles: entra en el HUD (112 px de alto) con margen */
+const SIZE = 80;
+const STROKE_WIDTH = 6;
+const RADIUS = (SIZE - STROKE_WIDTH) / 2;
+const CIRCUMFERENCE = RADIUS * 2 * Math.PI;
 
-const TimerCircle = memo(function TimerCircle({
-  seconds,
-  totalSeconds,
-  isUrgent,
-  size = 100,
-  strokeWidth = 6,
-}: TimerCircleProps) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference * (1 - seconds / totalSeconds);
+/** Tamaño de fuente del número como fracción del diámetro (dos dígitos entran con margen) */
+const FONT_SIZE = SIZE * 0.42;
+
+const TimerCircle = memo(function TimerCircle({ seconds, totalSeconds, isUrgent }: TimerCircleProps) {
+  const offset = CIRCUMFERENCE * (1 - seconds / totalSeconds);
 
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg className="-rotate-90" width={size} height={size} aria-hidden="true">
+    <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
+      <svg className="-rotate-90" width={SIZE} height={SIZE} aria-hidden="true">
         {/* Disco de fondo: separa el número del degradado */}
         <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
+          cx={SIZE / 2}
+          cy={SIZE / 2}
+          r={RADIUS}
           fill="rgba(15, 23, 42, 0.65)"
           stroke="rgba(255, 255, 255, 0.2)"
-          strokeWidth={strokeWidth}
+          strokeWidth={STROKE_WIDTH}
         />
 
         {/* Anillo de progreso: avance lineal, un segundo por paso. Solo transiciona el
             stroke-dashoffset: el repintado queda limitado a este SVG. */}
         <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
+          cx={SIZE / 2}
+          cy={SIZE / 2}
+          r={RADIUS}
           stroke={isUrgent ? '#ef4444' : '#67e8f9'}
-          strokeWidth={strokeWidth}
+          strokeWidth={STROKE_WIDTH}
           fill="none"
-          strokeDasharray={circumference}
+          strokeDasharray={CIRCUMFERENCE}
           strokeDashoffset={offset}
           strokeLinecap="round"
           className="transition-[stroke-dashoffset] duration-1000 ease-linear motion-reduce:transition-none"
@@ -66,7 +60,7 @@ const TimerCircle = memo(function TimerCircle({
         className={`absolute inset-0 flex items-center justify-center font-black tabular-nums leading-none ${
           isUrgent ? 'text-red-400' : 'text-white'
         }`}
-        style={{ fontSize: size * FONT_SIZE_RATIO }}
+        style={{ fontSize: FONT_SIZE }}
       >
         {seconds}
       </span>

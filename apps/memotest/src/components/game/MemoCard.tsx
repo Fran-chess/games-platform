@@ -33,7 +33,7 @@ export const MemoCard = memo(function MemoCard({ cardId }: MemoCardProps) {
   return (
     <button
       type="button"
-      className="flip-card memo-card"
+      className="flip-card memo-card aspect-[3/4]"
       data-testid="memo-card"
       data-state={state}
       data-flipped={state !== 'hidden'}
@@ -45,12 +45,7 @@ export const MemoCard = memo(function MemoCard({ cardId }: MemoCardProps) {
       <span className="flip-card__inner">
         {/* Dorso: logo institucional */}
         <span className="flip-card__face bg-white/10 ring-1 ring-inset ring-white/20 shadow-md">
-          <img
-            src="/images/8.svg"
-            alt=""
-            className="w-[70%] h-[70%] object-contain opacity-80"
-            draggable={false}
-          />
+          <img src="/images/8.svg" alt="" className="w-[70%] h-[70%] object-contain opacity-80" />
         </span>
 
         {/* Frente: ícono. Sobre el degradado verde de la carta emparejada va en verde muy oscuro

@@ -27,7 +27,6 @@ export function EndPanel({ hasPrize }: EndPanelProps) {
         src={hasPrize ? '/images/13.svg' : '/images/8.svg'}
         alt="DarSalud"
         className="w-28 h-28 object-contain"
-        draggable={false}
       />
 
       <div className="space-y-4">

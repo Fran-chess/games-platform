@@ -58,7 +58,7 @@ This is a **Turborepo + PNPM monorepo** containing multiple game applications an
 - **`apps/memotest`** (port 3001): Memory test game with card matching mechanics, memorization phases, and prize selection. The store drives the whole round and all animation is CSS (see `apps/memotest/CLAUDE.md`).
 
 ### Shared Packages
-- **`@games-platform/ui`**: Minimal shared UI package containing only `MassiveConfetti` component (used by both games for victory celebrations)
+- **`@games-platform/ui`**: Minimal shared UI package containing only the `MassiveConfetti` component and its `preloadConfetti` helper (used by both games for victory celebrations)
 
 ### Technology Stack
 - **Build System**: Turborepo for monorepo orchestration with caching

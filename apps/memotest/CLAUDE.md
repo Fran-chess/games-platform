@@ -58,9 +58,11 @@ Key behaviours:
   round is over, the board is locked from that instant; only the screen change is delayed.
 - **Idle return**: on `prize` and `failed`, `IDLE_RETURN_MS` without a touch returns to
   `waiting`. Any pointerdown (`keepAlive`) re-arms it.
-- **Screen changes** go through `utils/screenTransition.ts` (View Transitions API with
-  `flushSync`; falls back to an instant change). The state update inside it runs on the next
-  frame, not synchronously.
+- **Screen changes** go through `changeScreen` in the store, which wraps
+  `utils/screenTransition.ts` (View Transitions API with `flushSync`; falls back to an instant
+  change). The state update runs on the next frame, not synchronously, so while a change is
+  pending every action ignores input (`isChangingScreen`) and anything that depends on the new
+  screen (timers, idle return) is scheduled inside the update callback.
 
 ### Rules and timings: one file
 
