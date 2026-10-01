@@ -1,17 +1,25 @@
+interface WaitingScreenProps {
+  /** Se llama cuando el jugador toca la pantalla */
+  onStart: () => void;
+}
+
 /**
- * Pantalla de espera: logo de DarSalud y llamado a tocar.
- * Es solo presentación; el toque lo maneja quien la monta.
+ * Pantalla de espera: logo de DarSalud y llamado a tocar. Toda la pantalla es el botón.
  * Los movimientos en reposo son animaciones CSS de transform/opacity (globals.css):
  * las resuelve el compositor, sin JavaScript por frame.
  */
-export function WaitingScreen() {
+export function WaitingScreen({ onStart }: WaitingScreenProps) {
   return (
-    <div className="relative h-full w-full bg-cyan-600 overflow-hidden cursor-pointer">
+    <div
+      data-testid="waiting-screen"
+      className="relative h-full w-full bg-cyan-600 overflow-hidden cursor-pointer"
+      onClick={onStart}
+    >
       <div className="absolute inset-0 flex items-center justify-center">
         <img
           src="/images/8.svg"
           alt="DarSalud"
-          className="waiting-logo w-[32rem] h-[32rem] object-contain select-none"
+          className="waiting-logo w-[32rem] h-[32rem] object-contain"
           draggable={false}
         />
       </div>

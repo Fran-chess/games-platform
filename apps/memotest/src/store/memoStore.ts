@@ -1,645 +1,378 @@
 /**
- * MemoTest Game Store - Optimizado para rendimiento
- * Estado normalizado + selectores granulares + sin immer
+ * MemoTest Game Store
+ * El store conduce la partida completa: fases, reloj, sonidos y tiempos de espera.
+ * Los componentes solo dibujan el estado y avisan los toques.
  * @module memoStore
  */
 
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
-import { memoService, type MemoCard, type PrizeCard } from '@/services/game/memoService';
+import { devtools } from 'zustand/middleware';
+import {
+  CONFETTI_MS,
+  GAME_CONFIG,
+  IDLE_RETURN_MS,
+  MISMATCH_HOLD_MS,
+  PRIZE_REVEAL_MS,
+  PRIZE_STEP_MS,
+  RESOLVE_DELAY_MS,
+  SUCCESS_HOLD_MS,
+  createCards,
+  createPrizeCards,
+  evaluateRound,
+  type CardIconId,
+  type MemoCard,
+  type PrizeCard,
+} from '@/services/game/memoService';
 import { clockService } from '@/services/game/clockService';
+import { audioService } from '@/services/audio/audioService';
+import { screenTransition } from '@/utils/screenTransition';
 
-// ============= TYPES & INTERFACES =============
+// ============= TYPES =============
 
 /**
- * Estados posibles del juego
+ * Fases del juego
  */
 export type GameState =
   | 'waiting'      // Pantalla de espera
-  | 'shuffling'    // Mezclando cartas (animación)
-  | 'memorizing'   // Mostrando cartas para memorizar
-  | 'playing'      // Jugando activamente
-  | 'success'      // Encontró los 2 pares requeridos
-  | 'failed'       // Falló (sin movimientos o sin tiempo)
-  | 'prize';       // Fase de selección de premio
+  | 'ready'        // Tablero con las cartas boca abajo, antes de mostrarlas
+  | 'memorizing'   // Cartas a la vista para memorizar
+  | 'playing'      // Jugando
+  | 'success'      // Encontró los pares requeridos; el tablero queda a la vista un momento
+  | 'failed'       // Pantalla de derrota (sin intentos o sin tiempo)
+  | 'prize';       // Selección de premio
 
 /**
- * Estadísticas del juego
+ * Pasos de la selección de premio
  */
-export interface GameStats {
-  movesUsed: number;
-  matchesFound: number;
-  timeElapsed: number;
-  score: number;
-  bestScore: number | null;
-}
+type PrizeStage =
+  | 'choosing'      // Esperando que el jugador elija una carta
+  | 'revealing'     // La carta elegida se está dando vuelta
+  | 'winner-shown'  // La elegida no tenía premio: se muestra dónde estaba
+  | 'result';       // Mensaje final
 
-/**
- * Estado normalizado: cartas por ID + orden
- */
-export interface MemoState {
-  // Estado del juego
+interface MemoState {
   gameState: GameState;
+
+  // Tablero (normalizado: cartas por id + orden)
   cardsById: Record<string, MemoCard>;
   cardOrder: string[];
   selectedCards: string[];
-  prizeCards: PrizeCard[];
-  shakeCards: Set<string>; // IDs de cartas en shake animation
-
-  // Estadísticas
-  stats: GameStats;
-
-  // Timer centralizado
+  /** Par errado que está a la vista antes de taparse */
+  mismatchedCards: string[];
+  /** El tablero no acepta toques: fuera de la fase de juego o mientras se resuelve un par */
+  isBoardLocked: boolean;
+  movesUsed: number;
+  matchesFound: number;
   timeLeft: number;
 
-  // UI States
-  isProcessing: boolean;
+  // Premio
+  prizeCards: PrizeCard[];
+  selectedPrizeId: string | null;
+  prizeStage: PrizeStage;
   showConfetti: boolean;
-  soundEnabled: boolean;
-
-  // Callbacks de audio (inyectados desde componentes)
-  audioCallbacks: {
-    onMatch?: () => void;
-    onError?: () => void;
-    onVictory?: () => void;
-    onDefeat?: () => void;
-    onTick?: () => void;
-    onPhaseStart?: () => void;
-  };
-
-  // Phase sub-state (para MemorizationPhase state machine)
-  memorizationPhase: 'shuffling' | 'memorizing' | 'hiding' | null;
-
-  // Timers internos del store (para limpiar correctamente)
-  phaseTransitionTimers: Set<NodeJS.Timeout>;
 }
 
-/**
- * Acciones disponibles
- */
-export interface MemoActions {
-  // Gestión del juego
-  initGame: () => void;
-  startShuffling: () => void;
-  startMemorizing: () => void;
-  startPlaying: () => void;
-  resetGame: () => void;
-  restartGame: () => void;
-
-  // Mecánica del juego
+interface MemoActions {
+  /** Empieza una partida nueva, desde la pantalla de espera o desde una pantalla final */
+  startGame: () => void;
   flipCard: (cardId: string) => void;
-  handleMatchCheck: (firstCardId: string, secondCardId: string) => void;
-  handleNoMatch: () => void;
-  clearShake: (cardId: string) => void;
-
-  // Fase de premio
-  initializePrizePhase: () => void;
-  selectPrizeCard: (cardId: string) => void;
-
-  // UI
-  setShowConfetti: (show: boolean) => void;
-  toggleSound: () => void;
-
-  // Stats & Timer
-  updateTimeElapsed: (time: number) => void;
-  setTimeLeft: (time: number) => void;
-  checkGameEnd: (timeRemaining: number) => void;
-
-  // Clock control
-  startClock: (seconds: number) => void;
-  stopClock: () => void;
-
-  // Audio callbacks (inyección)
-  setAudioCallbacks: (callbacks: MemoState['audioCallbacks']) => void;
-
-  // State machine actions
-  clearPhaseTimers: () => void;
-  transitionToMemorizing: () => void;
-  transitionToHiding: () => void;
-  transitionToPlaying: () => void;
-  transitionToPrize: () => void;
+  pickPrizeCard: (cardId: string) => void;
+  /** Avisa que hubo un toque en una pantalla final: posterga la vuelta por inactividad */
+  keepAlive: () => void;
+  /** Vuelve a la pantalla de espera */
+  resetGame: () => void;
 }
 
-export type MemoStore = MemoState & MemoActions;
+type MemoStore = MemoState & MemoActions;
 
-// ============= CONSTANTS =============
-
-const INITIAL_STATS: GameStats = {
+const INITIAL_STATE: MemoState = {
+  gameState: 'waiting',
+  cardsById: {},
+  cardOrder: [],
+  selectedCards: [],
+  mismatchedCards: [],
+  isBoardLocked: true,
   movesUsed: 0,
   matchesFound: 0,
-  timeElapsed: 0,
-  score: 0,
-  bestScore: null,
+  timeLeft: 0,
+  prizeCards: [],
+  selectedPrizeId: null,
+  prizeStage: 'choosing',
+  showConfetti: false,
 };
 
-// ============= HELPERS =============
+// ============= TIMERS =============
+// Viven fuera del state: no son datos que alguien dibuje, y así cualquier cambio de partida
+// puede cancelar lo que quedó pendiente de la anterior.
 
-/**
- * Convierte array de cartas a estado normalizado
- */
-function normalizeCards(cards: MemoCard[]): { cardsById: Record<string, MemoCard>; cardOrder: string[] } {
-  const cardsById: Record<string, MemoCard> = {};
-  const cardOrder: string[] = [];
+const pendingTimers = new Set<ReturnType<typeof setTimeout>>();
+let idleTimer: ReturnType<typeof setTimeout> | undefined;
 
-  cards.forEach(card => {
-    cardsById[card.id] = card;
-    cardOrder.push(card.id);
-  });
+function schedule(callback: () => void, ms: number): void {
+  const timer = setTimeout(() => {
+    pendingTimers.delete(timer);
+    callback();
+  }, ms);
+  pendingTimers.add(timer);
+}
 
-  return { cardsById, cardOrder };
+/** Cancela todo lo pendiente: pasos de la partida, reloj y vuelta por inactividad */
+function cancelPending(): void {
+  pendingTimers.forEach(clearTimeout);
+  pendingTimers.clear();
+  clearTimeout(idleTimer);
+  clockService.stop();
+}
+
+function vibrate(pattern: number | number[]): void {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
 }
 
 // ============= STORE =============
 
 export const useMemoStore = create<MemoStore>()(
   devtools(
-    persist(
-      (set, get) => ({
-        // Estado inicial
-        gameState: 'waiting' as GameState,
-        cardsById: {},
-        cardOrder: [],
-        selectedCards: [],
-        prizeCards: [],
-        shakeCards: new Set<string>(),
-        stats: INITIAL_STATS,
-        timeLeft: 0,
-        isProcessing: false,
-        showConfetti: false,
-        soundEnabled: true,
-        audioCallbacks: {},
-        memorizationPhase: null,
-        phaseTransitionTimers: new Set<NodeJS.Timeout>(),
+    (set, get) => {
+      /** Todas las cartas boca arriba o boca abajo */
+      const withAllCardsFlipped = (isFlipped: boolean): Record<string, MemoCard> =>
+        Object.fromEntries(
+          Object.entries(get().cardsById).map(([id, card]) => [id, { ...card, isFlipped }])
+        );
 
-        // ============= ACTIONS =============
+      /** Si nadie toca la pantalla final, el juego vuelve a la espera para el próximo jugador */
+      const armIdleReturn = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => get().resetGame(), IDLE_RETURN_MS);
+      };
 
-        initGame: () => {
-          const cards = memoService.generateCards();
-          const { cardsById, cardOrder } = normalizeCards(cards);
-          const currentBest = get().stats.bestScore;
+      const beginMemorizing = () => {
+        set({ gameState: 'memorizing', cardsById: withAllCardsFlipped(true) });
 
-          set({
-            cardsById,
-            cardOrder,
-            gameState: 'waiting',
-            selectedCards: [],
-            prizeCards: [],
-            shakeCards: new Set(),
-            stats: { ...INITIAL_STATS, bestScore: currentBest },
-            showConfetti: false,
-            isProcessing: false,
-          });
-        },
-
-        startShuffling: () => {
-          const cards = memoService.generateCards();
-          const { cardsById, cardOrder } = normalizeCards(cards);
-
-          set({
-            gameState: 'shuffling',
-            cardsById,
-            cardOrder,
-          });
-        },
-
-        startMemorizing: () => {
-          const state = get();
-          const newCardsById = { ...state.cardsById };
-
-          // Voltear todas las cartas
-          state.cardOrder.forEach(id => {
-            newCardsById[id] = { ...newCardsById[id], isFlipped: true };
-          });
-
-          set({
-            gameState: 'memorizing',
-            cardsById: newCardsById,
-          });
-        },
-
-        startPlaying: () => {
-          const state = get();
-          const newCardsById = { ...state.cardsById };
-
-          // Ocultar todas las cartas
-          state.cardOrder.forEach(id => {
-            newCardsById[id] = { ...newCardsById[id], isFlipped: false };
-          });
-
-          set({
-            gameState: 'playing',
-            cardsById: newCardsById,
-          });
-        },
-
-        resetGame: () => {
-          const currentBest = get().stats.bestScore;
-
-          set({
-            gameState: 'waiting',
-            cardsById: {},
-            cardOrder: [],
-            selectedCards: [],
-            prizeCards: [],
-            shakeCards: new Set(),
-            stats: { ...INITIAL_STATS, bestScore: currentBest },
-            showConfetti: false,
-            isProcessing: false,
-          });
-        },
-
-        restartGame: () => {
-          const cards = memoService.generateCards();
-          const { cardsById, cardOrder } = normalizeCards(cards);
-          const currentBest = get().stats.bestScore;
-
-          set({
-            stats: { ...INITIAL_STATS, bestScore: currentBest },
-            selectedCards: [],
-            prizeCards: [],
-            shakeCards: new Set(),
-            showConfetti: false,
-            isProcessing: false,
-            gameState: 'shuffling',
-            cardsById,
-            cardOrder,
-          });
-        },
-
-        flipCard: (cardId: string) => {
-          const state = get();
-
-          // Validaciones
-          if (
-            state.gameState !== 'playing' ||
-            state.selectedCards.length >= 2 ||
-            state.isProcessing
-          ) {
-            return;
+        clockService.start(GAME_CONFIG.memorizationTime, (timeLeft) => {
+          set({ timeLeft });
+          if (timeLeft === 0) {
+            beginPlaying();
           }
+        });
+      };
 
-          const card = state.cardsById[cardId];
-          if (!card || card.isFlipped || card.isMatched) {
-            return;
+      const beginPlaying = () => {
+        set({ gameState: 'playing', cardsById: withAllCardsFlipped(false), isBoardLocked: false });
+
+        clockService.start(GAME_CONFIG.gameTime, (timeLeft) => {
+          set({ timeLeft });
+          if (timeLeft === 0) {
+            enterFailed();
+          } else if (timeLeft <= GAME_CONFIG.tickTime) {
+            audioService.playTick();
           }
+        });
+      };
 
-          const newSelectedCards = [...state.selectedCards, cardId];
-          const newCardsById = {
-            ...state.cardsById,
-            [cardId]: { ...card, isFlipped: true }
-          };
+      const enterPrize = () => {
+        screenTransition(() =>
+          set({ gameState: 'prize', prizeCards: createPrizeCards() })
+        );
+        armIdleReturn();
+      };
 
-          const updates: Partial<MemoState> = {
-            cardsById: newCardsById,
-            selectedCards: newSelectedCards,
-          };
+      const enterFailed = () => {
+        cancelPending();
+        audioService.playDefeat();
+        screenTransition(() => set({ gameState: 'failed', isBoardLocked: true }));
+        armIdleReturn();
+      };
 
-          // Si hay 2 cartas seleccionadas, procesar match automáticamente
-          if (newSelectedCards.length === 2) {
-            updates.isProcessing = true;
-            const newMovesUsed = state.stats.movesUsed + 1;
-            updates.stats = {
-              ...state.stats,
-              movesUsed: newMovesUsed
-            };
+      /**
+       * Resuelve el par recién dado vuelta. El resultado de la partida se decide acá mismo:
+       * si terminó, el tablero queda bloqueado desde este instante y solo falta cambiar de pantalla.
+       */
+      const resolvePair = () => {
+        const state = get();
+        const [firstId, secondId] = state.selectedCards;
+        const first = state.cardsById[firstId];
+        const second = state.cardsById[secondId];
 
-            set(updates);
+        const isMatch = first.icon === second.icon;
+        const matchesFound = state.matchesFound + (isMatch ? 1 : 0);
+        const outcome = evaluateRound(matchesFound, state.movesUsed);
 
-            // Procesar match check después de 600ms (animación de flip)
-            setTimeout(() => {
-              const currentState = get();
-              const [firstId, secondId] = newSelectedCards;
-              const card1 = currentState.cardsById[firstId];
-              const card2 = currentState.cardsById[secondId];
+        if (outcome !== 'playing') {
+          clockService.stop();
+        }
 
-              if (!card1 || !card2) return;
-
-              const isMatch = memoService.checkMatch(card1, card2);
-
-              if (isMatch) {
-                currentState.audioCallbacks.onMatch?.();
-                get().handleMatchCheck(firstId, secondId);
-
-                // Check victoria después de actualizar match
-                setTimeout(() => {
-                  const config = memoService.getConfig();
-                  const latestState = get();
-                  if (latestState.stats.matchesFound >= config.requiredPairs) {
-                    get().checkGameEnd(latestState.timeLeft);
-                  }
-                }, 100);
-              } else {
-                currentState.audioCallbacks.onError?.();
-                get().handleNoMatch();
-
-                // Check derrota después de cada error (incluye derrota anticipada)
-                setTimeout(() => {
-                  get().checkGameEnd(get().timeLeft);
-                }, 1000);
-              }
-            }, 600);
-
-            return;
-          }
-
-          set(updates);
-        },
-
-        handleMatchCheck: (firstCardId: string, secondCardId: string) => {
-          const state = get();
-          const card1 = state.cardsById[firstCardId];
-          const card2 = state.cardsById[secondCardId];
-
-          if (!card1 || !card2) return;
-
+        if (isMatch) {
           set({
             cardsById: {
               ...state.cardsById,
-              [firstCardId]: { ...card1, isMatched: true },
-              [secondCardId]: { ...card2, isMatched: true },
+              [firstId]: { ...first, isMatched: true },
+              [secondId]: { ...second, isMatched: true },
             },
-            stats: {
-              ...state.stats,
-              matchesFound: state.stats.matchesFound + 1,
-            },
+            matchesFound,
             selectedCards: [],
-            isProcessing: false,
+            isBoardLocked: outcome !== 'playing',
+            gameState: outcome === 'won' ? 'success' : state.gameState,
           });
-        },
 
-        handleNoMatch: () => {
-          const state = get();
-          const newCardsById = { ...state.cardsById };
-          const newShakeCards = new Set(state.selectedCards);
-
-          // Voltear las cartas de vuelta
-          state.selectedCards.forEach(id => {
-            const card = newCardsById[id];
-            if (card) {
-              newCardsById[id] = { ...card, isFlipped: false };
+          if (outcome === 'won') {
+            audioService.playVictory();
+            schedule(enterPrize, SUCCESS_HOLD_MS);
+          } else {
+            audioService.playMatch();
+            if (outcome === 'lost') {
+              schedule(enterFailed, MISMATCH_HOLD_MS);
             }
-          });
+          }
+          return;
+        }
 
+        audioService.playError();
+        set({ mismatchedCards: [firstId, secondId] });
+
+        schedule(() => {
+          if (outcome === 'lost') {
+            enterFailed();
+            return;
+          }
+
+          const { cardsById } = get();
           set({
-            cardsById: newCardsById,
+            cardsById: {
+              ...cardsById,
+              [firstId]: { ...cardsById[firstId], isFlipped: false },
+              [secondId]: { ...cardsById[secondId], isFlipped: false },
+            },
             selectedCards: [],
-            isProcessing: false,
-            shakeCards: newShakeCards,
+            mismatchedCards: [],
+            isBoardLocked: false,
           });
-        },
+        }, MISMATCH_HOLD_MS);
+      };
 
-        clearShake: (cardId: string) => {
-          const state = get();
-          const newShakeCards = new Set(state.shakeCards);
-          newShakeCards.delete(cardId);
-          set({ shakeCards: newShakeCards });
-        },
+      return {
+        ...INITIAL_STATE,
 
-        initializePrizePhase: () => {
-          set({
-            gameState: 'prize',
-            prizeCards: memoService.generatePrizeCards(),
-            showConfetti: true,
-          });
-        },
+        startGame: () => {
+          cancelPending();
+          audioService.playStart();
 
-        selectPrizeCard: (cardId: string) => {
-          const state = get();
-          const cardIndex = state.prizeCards.findIndex(c => c.id === cardId);
-          if (cardIndex === -1) return;
-
-          const card = state.prizeCards[cardIndex];
-          const newPrizeCards = [...state.prizeCards];
-          newPrizeCards[cardIndex] = { ...card, isRevealed: true };
-
-          set({
-            prizeCards: newPrizeCards,
-            showConfetti: card.hasPrize,
-          });
-        },
-
-        setShowConfetti: (show) => {
-          set({ showConfetti: show });
-        },
-
-        toggleSound: () => {
-          const state = get();
-          set({ soundEnabled: !state.soundEnabled });
-        },
-
-        updateTimeElapsed: (time) => {
-          const state = get();
-          set({
-            stats: { ...state.stats, timeElapsed: time }
-          });
-        },
-
-        checkGameEnd: (timeRemaining: number) => {
-          const state = get();
-          const config = memoService.getConfig();
-
-          const validation = memoService.validateGameState(
-            state.stats.matchesFound,
-            state.stats.movesUsed,
-            timeRemaining
+          const cards = createCards();
+          screenTransition(() =>
+            set({
+              ...INITIAL_STATE,
+              gameState: 'ready',
+              cardsById: Object.fromEntries(cards.map((card) => [card.id, card])),
+              cardOrder: cards.map((card) => card.id),
+              // El anillo del reloj aparece lleno cuando empieza la memorización
+              timeLeft: GAME_CONFIG.memorizationTime,
+            })
           );
 
-          if (validation.hasWon) {
-            clockService.stop();
-            const score = memoService.calculateScore(
-              state.stats.movesUsed,
-              state.stats.timeElapsed
-            );
+          schedule(beginMemorizing, GAME_CONFIG.readyTime * 1000);
+        },
 
-            set({
-              gameState: 'success',
-              stats: {
-                ...state.stats,
-                score,
-                bestScore: !state.stats.bestScore || score > state.stats.bestScore
-                  ? score
-                  : state.stats.bestScore
-              }
-            });
+        flipCard: (cardId) => {
+          const state = get();
+          const card = state.cardsById[cardId];
 
-            // Trigger audio callback
-            state.audioCallbacks.onVictory?.();
-          } else if (validation.hasFailed) {
-            clockService.stop();
-            set({ gameState: 'failed' });
+          if (state.gameState !== 'playing' || state.isBoardLocked) return;
+          if (!card || card.isFlipped || card.isMatched) return;
 
-            // Trigger audio callback
-            state.audioCallbacks.onDefeat?.();
+          audioService.playFlip();
+
+          const selectedCards = [...state.selectedCards, cardId];
+          const isSecondCard = selectedCards.length === 2;
+
+          set({
+            cardsById: { ...state.cardsById, [cardId]: { ...card, isFlipped: true } },
+            selectedCards,
+            isBoardLocked: isSecondCard,
+            movesUsed: state.movesUsed + (isSecondCard ? 1 : 0),
+          });
+
+          if (isSecondCard) {
+            schedule(resolvePair, RESOLVE_DELAY_MS);
           }
         },
 
-        // Clock control
-        startClock: (seconds: number) => {
-          clockService.start(seconds, (timeLeft) => {
-            const state = get();
-            set({ timeLeft });
-
-            // Tick audio en últimos 10 segundos
-            if (timeLeft <= 10 && timeLeft > 0) {
-              state.audioCallbacks.onTick?.();
-            }
-
-            // Check cuando llega a 0
-            if (timeLeft === 0) {
-              // Si estamos en memorizing, transicionar a hiding
-              if (state.memorizationPhase === 'memorizing') {
-                get().transitionToHiding();
-              } else {
-                // Si estamos en playing, check game end
-                get().checkGameEnd(0);
-              }
-            }
-          });
-        },
-
-        stopClock: () => {
-          clockService.stop();
-        },
-
-        setTimeLeft: (time: number) => {
-          set({ timeLeft: time });
-        },
-
-        setAudioCallbacks: (callbacks: MemoState['audioCallbacks']) => {
-          set({ audioCallbacks: callbacks });
-        },
-
-        // ============= STATE MACHINE =============
-
-        clearPhaseTimers: () => {
+        pickPrizeCard: (cardId) => {
           const state = get();
-          state.phaseTransitionTimers.forEach(timer => clearTimeout(timer));
-          set({ phaseTransitionTimers: new Set() });
+          const card = state.prizeCards.find((prizeCard) => prizeCard.id === cardId);
+
+          if (state.gameState !== 'prize' || state.prizeStage !== 'choosing' || !card) return;
+
+          audioService.playPrizeSelect();
+          vibrate(30);
+          set({ selectedPrizeId: cardId, prizeStage: 'revealing' });
+          armIdleReturn();
+
+          const showResult = (showConfetti: boolean) => {
+            set({ prizeStage: 'result', showConfetti });
+            // La cuenta de inactividad arranca cuando el jugador ve el resultado
+            armIdleReturn();
+          };
+
+          if (card.hasPrize) {
+            schedule(() => {
+              audioService.playPrizeWin();
+              vibrate([50, 50, 50]);
+              showResult(true);
+              schedule(() => set({ showConfetti: false }), CONFETTI_MS);
+            }, PRIZE_REVEAL_MS);
+          } else {
+            schedule(() => {
+              set({ prizeStage: 'winner-shown' });
+              schedule(() => showResult(false), PRIZE_STEP_MS);
+            }, PRIZE_REVEAL_MS + PRIZE_STEP_MS);
+          }
         },
 
-        transitionToMemorizing: () => {
-          get().clearPhaseTimers();
-          const config = memoService.getConfig();
-
-          // Transición shuffling → memorizing después de shuffleAnimationTime
-          const timer = setTimeout(() => {
-            get().startMemorizing();
-            get().startClock(config.memorizationTime);
-            set({ memorizationPhase: 'memorizing' });
-
-            // Transición automática a hiding cuando timeLeft === 0
-            // (manejado por el clock callback)
-          }, config.shuffleAnimationTime * 1000);
-
-          const timers = get().phaseTransitionTimers;
-          timers.add(timer);
-          set({ memorizationPhase: 'shuffling', phaseTransitionTimers: timers });
+        keepAlive: () => {
+          const { gameState } = get();
+          if (gameState === 'prize' || gameState === 'failed') {
+            armIdleReturn();
+          }
         },
 
-        transitionToHiding: () => {
-          get().clearPhaseTimers();
-          get().stopClock();
-
-          // Transición directa: memorizing → playing (sin fase hiding intermedia)
-          get().transitionToPlaying();
+        resetGame: () => {
+          cancelPending();
+          screenTransition(() => set(INITIAL_STATE));
         },
-
-        transitionToPlaying: () => {
-          get().clearPhaseTimers();
-          get().startPlaying();
-          set({ memorizationPhase: null });
-        },
-
-        transitionToPrize: () => {
-          get().clearPhaseTimers();
-
-          // Transición success → prize después de 1.5s
-          const timer = setTimeout(() => {
-            get().initializePrizePhase();
-          }, 1500);
-
-          const timers = get().phaseTransitionTimers;
-          timers.add(timer);
-          set({ phaseTransitionTimers: timers });
-        },
-      }),
-      {
-        name: 'memo-storage',
-        partialize: (state) => ({
-          // Solo persistir mejores puntajes y configuración (no timeLeft, no selectedCards, no isProcessing)
-          stats: {
-            ...INITIAL_STATS,
-            bestScore: state.stats.bestScore,
-          },
-          soundEnabled: state.soundEnabled,
-        }),
-        // Throttle: limitar writes a localStorage a 1 cada 2 segundos
-        merge: (persistedState: any, currentState) => ({
-          ...currentState,
-          ...persistedState,
-        }),
-      }
-    ),
+      };
+    },
     {
       name: 'memo-store',
-      enabled: process.env.NODE_ENV === 'development', // Solo devtools en dev
+      enabled: process.env.NODE_ENV === 'development',
     }
   )
 );
 
-// ============= SELECTORES GRANULARES =============
+// ============= SELECTORES =============
+// Cada uno devuelve un valor primitivo o una referencia estable: un componente solo se vuelve
+// a dibujar cuando cambia exactamente lo que lee.
 
-/**
- * Selectores base
- */
 export const useGameState = () => useMemoStore((state) => state.gameState);
-export const useMemorizationPhase = () => useMemoStore((state) => state.memorizationPhase);
-export const useIsProcessing = () => useMemoStore((state) => state.isProcessing);
-export const useSoundEnabled = () => useMemoStore((state) => state.soundEnabled);
-export const useShowConfetti = () => useMemoStore((state) => state.showConfetti);
-
-/**
- * Selectores primitivos para el HUD (sin crear objetos nuevos)
- */
+export const useCardOrder = () => useMemoStore((state) => state.cardOrder);
+export const useIsBoardLocked = () => useMemoStore((state) => state.isBoardLocked);
 export const useTimeLeft = () => useMemoStore((state) => state.timeLeft);
-export const useMovesUsed = () => useMemoStore((state) => state.stats.movesUsed);
-export const useMatchesFound = () => useMemoStore((state) => state.stats.matchesFound);
+export const useMovesUsed = () => useMemoStore((state) => state.movesUsed);
+export const useMatchesFound = () => useMemoStore((state) => state.matchesFound);
 
-/**
- * Selector para obtener array de cartas (solo cuando sea necesario)
- */
-export const useCardsList = () => useMemoStore((state) =>
-  state.cardOrder.map(id => state.cardsById[id])
-);
+export const useCardIcon = (cardId: string): CardIconId | undefined =>
+  useMemoStore((state) => state.cardsById[cardId]?.icon);
 
-/**
- * Selectores granulares primitivos - Sin crear objetos nuevos
- */
 export const useCardFlipped = (cardId: string) =>
   useMemoStore((state) => state.cardsById[cardId]?.isFlipped ?? false);
 
 export const useCardMatched = (cardId: string) =>
   useMemoStore((state) => state.cardsById[cardId]?.isMatched ?? false);
 
-export const useCardIcon = (cardId: string) =>
-  useMemoStore((state) => state.cardsById[cardId]?.icon);
+export const useCardMismatched = (cardId: string) =>
+  useMemoStore((state) => state.mismatchedCards.includes(cardId));
 
-/**
- * Selector para orden de cartas
- */
-export const useCardOrder = () => useMemoStore((state) => state.cardOrder);
-
-/**
- * Selector para shake state de una carta
- */
-export const useCardShake = (cardId: string) => useMemoStore((state) => state.shakeCards.has(cardId));
-
-/**
- * Selector para prize cards
- */
 export const usePrizeCards = () => useMemoStore((state) => state.prizeCards);
-
-/**
- * Stats completos (solo para pantallas finales)
- */
-export const useStats = () => useMemoStore((state) => state.stats);
+export const useSelectedPrizeId = () => useMemoStore((state) => state.selectedPrizeId);
+export const usePrizeStage = () => useMemoStore((state) => state.prizeStage);
+export const useShowConfetti = () => useMemoStore((state) => state.showConfetti);

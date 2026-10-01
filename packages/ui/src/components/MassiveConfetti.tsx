@@ -3,11 +3,22 @@ import dynamic from 'next/dynamic'
 
 const ReactConfetti = dynamic(() => import('react-confetti'), { ssr: false })
 
+/**
+ * Descarga por adelantado el código del confetti, que si no se pide recién al mostrarlo.
+ * Sirve para que el festejo no dependa de la red en ese momento.
+ * Es el mismo import() que usa el componente: el bundler lo resuelve al mismo chunk.
+ */
+export function preloadConfetti(): void {
+  void import('react-confetti')
+}
+
 interface MassiveConfettiProps {
   show: boolean
   windowSize?: { width: number; height: number }
   isTV65?: boolean
   isTabletPortrait?: boolean
+  /** Multiplicador de la cantidad de piezas (1 = cantidad completa) */
+  density?: number
   className?: string
 }
 
@@ -16,6 +27,7 @@ export const MassiveConfetti: React.FC<MassiveConfettiProps> = ({
   windowSize,
   isTV65 = false,
   isTabletPortrait = false,
+  density = 1,
   className = "pointer-events-none fixed inset-0 z-50"
 }) => {
   const dimensions = windowSize || {
@@ -48,7 +60,7 @@ export const MassiveConfetti: React.FC<MassiveConfettiProps> = ({
     <>
       <ReactConfetti
         {...confettiConfig}
-        numberOfPieces={isTV65 ? 600 : isTabletPortrait ? 180 : 220}
+        numberOfPieces={Math.round((isTV65 ? 600 : isTabletPortrait ? 180 : 220) * density)}
         confettiSource={{ x: 0, y: 0, w: dimensions.width, h: 40 }}
         recycle={false}
         className={`${className} ${isTabletPortrait ? 'confetti-tablet-portrait' : ''}`}
@@ -56,7 +68,7 @@ export const MassiveConfetti: React.FC<MassiveConfettiProps> = ({
       />
       <ReactConfetti
         {...confettiConfig}
-        numberOfPieces={isTV65 ? 450 : isTabletPortrait ? 140 : 170}
+        numberOfPieces={Math.round((isTV65 ? 450 : isTabletPortrait ? 140 : 170) * density)}
         confettiSource={{ x: 0, y: dimensions.height - 40, w: dimensions.width, h: 40 }}
         recycle={false}
         className={`${className} ${isTabletPortrait ? 'confetti-tablet-portrait' : ''}`}

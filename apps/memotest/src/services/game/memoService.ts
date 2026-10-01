@@ -1,13 +1,13 @@
 /**
- * Servicio de lógica de negocio del MemoTest
- * Centraliza las reglas y mecánicas del juego
+ * Reglas del MemoTest: configuración, tiempos y lógica pura de la partida.
+ * Todo lo que define cómo se juega está en este archivo.
  */
 
 /**
  * Íconos disponibles para las cartas (set "Cuidados Paliativos").
  * Cada partida sortea `totalPairs` de ellos. Los dibujos están en components/game/cardIcons.tsx.
  */
-export const CARD_ICON_IDS = [
+const CARD_ICON_IDS = [
   'manos-corazon',
   'casa',
   'mariposa',
@@ -23,194 +23,124 @@ export type CardIconId = (typeof CARD_ICON_IDS)[number];
 
 export interface MemoCard {
   id: string;
-  value: string;
+  /** Dos cartas forman par cuando tienen el mismo ícono */
   icon: CardIconId;
   isFlipped: boolean;
   isMatched: boolean;
-  position: number;
 }
 
 export interface PrizeCard {
   id: string;
   hasPrize: boolean;
-  isRevealed: boolean;
-  position: number;
 }
 
-export interface GameConfig {
-  totalPairs: number;
-  requiredPairs: number;
-  maxMoves: number;
-  memorizationTime: number;
-  gameTime: number;
-  shuffleAnimationTime: number;
-}
+type RoundOutcome = 'playing' | 'won' | 'lost';
 
-export interface GameValidation {
-  hasWon: boolean;
-  hasFailed: boolean;
-  reason?: 'max_moves' | 'time_up' | 'success';
-}
-
-/**
- * Configuración por defecto del juego
- */
-const DEFAULT_CONFIG: GameConfig = {
+export const GAME_CONFIG = {
+  /** Pares en el tablero (12 cartas en una grilla de 6×2) */
   totalPairs: 6,
+  /** Pares que hay que encontrar para ganar */
   requiredPairs: 2,
+  /** Intentos disponibles: con 2 pares requeridos, tolera un error */
   maxMoves: 3,
-  memorizationTime: 5, // 5 segundos para memorizar 12 cartas
-  gameTime: 120,
-  shuffleAnimationTime: 2,
-};
+  /** Segundos con las cartas boca abajo antes de mostrarlas */
+  readyTime: 1,
+  /** Segundos con las cartas a la vista */
+  memorizationTime: 5,
+  /** Segundos para jugar. Tres intentos llevan menos de 15 s: con 30 s el reloj aprieta sin apurar */
+  gameTime: 30,
+  /** Segundos restantes desde los que el reloj se muestra en rojo */
+  urgentTime: 10,
+  /** Segundos restantes desde los que suena el tick */
+  tickTime: 5,
+} as const;
+
+/** Duración del giro de una carta. El CSS la recibe como --flip-ms (ver GameBoard). */
+export const FLIP_MS = 300;
+
+/** Espera tras el segundo toque antes de resolver el par: el giro tiene que haber terminado */
+export const RESOLVE_DELAY_MS = FLIP_MS + 100;
+
+/** Tiempo que un par errado queda a la vista antes de taparse: el error tiene que enseñar */
+export const MISMATCH_HOLD_MS = 900;
+
+/** Tiempo que el tablero ganado queda a la vista antes de pasar al premio */
+export const SUCCESS_HOLD_MS = 1500;
+
+/** Duración del giro de las cartas de premio (--flip-ms en PrizePhase) */
+export const PRIZE_FLIP_MS = 800;
+
+/** Espera entre elegir una carta de premio y mostrar qué había: el giro más una pausa */
+export const PRIZE_REVEAL_MS = PRIZE_FLIP_MS + 400;
+
+/** Pausa entre los pasos de la revelación cuando la carta elegida no tenía premio */
+export const PRIZE_STEP_MS = 1500;
+
+/** Duración del confetti al ganar el premio */
+export const CONFETTI_MS = 4000;
+
+/** Inactividad en Premio o Derrota tras la que el juego vuelve solo a la pantalla de espera */
+export const IDLE_RETURN_MS = 20000;
 
 /**
- * Clase principal del servicio de MemoTest
+ * Devuelve una copia mezclada (Fisher-Yates)
  */
-export class MemoService {
-  private config: GameConfig;
+function shuffle<T>(items: readonly T[]): T[] {
+  const shuffled = [...items];
 
-  constructor(config: Partial<GameConfig> = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
 
-  /**
-   * Genera las cartas para el juego: sortea los íconos de la partida y arma los pares
-   */
-  generateCards(): MemoCard[] {
-    const selectedIcons = this.shuffle(CARD_ICON_IDS).slice(0, this.config.totalPairs);
-
-    // Crear pares de cartas
-    const cards: MemoCard[] = [];
-    selectedIcons.forEach((icon, index) => {
-      for (let i = 0; i < 2; i++) {
-        cards.push({
-          id: `card-${index}-${i}`,
-          value: `value-${index}`,
-          icon,
-          isFlipped: false,
-          isMatched: false,
-          position: 0
-        });
-      }
-    });
-
-    return this.shuffle(cards).map((card, index) => ({
-      ...card,
-      position: index
-    }));
-  }
-
-  /**
-   * Devuelve una copia mezclada (Fisher-Yates)
-   */
-  private shuffle<T>(items: readonly T[]): T[] {
-    const shuffled = [...items];
-
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-
-    return shuffled;
-  }
-
-  /**
-   * Genera 3 cartas de premio (1 ganadora, 2 perdedoras)
-   */
-  generatePrizeCards(): PrizeCard[] {
-    const cards: PrizeCard[] = [
-      { id: 'prize-0', hasPrize: true, isRevealed: false, position: 0 },
-      { id: 'prize-1', hasPrize: false, isRevealed: false, position: 1 },
-      { id: 'prize-2', hasPrize: false, isRevealed: false, position: 2 },
-    ];
-
-    // Aleatorizar la posición de la carta ganadora
-    return this.shuffle(cards).map((card, index) => ({
-      ...card,
-      position: index
-    }));
-  }
-
-  /**
-   * Valida si dos cartas coinciden
-   */
-  checkMatch(card1: MemoCard, card2: MemoCard): boolean {
-    return card1.value === card2.value;
-  }
-
-  /**
-   * Valida el estado del juego (victoria o derrota)
-   */
-  validateGameState(
-    matchesFound: number,
-    movesUsed: number,
-    timeRemaining: number
-  ): GameValidation {
-    // Victoria: encontró los pares requeridos
-    if (matchesFound >= this.config.requiredPairs) {
-      return {
-        hasWon: true,
-        hasFailed: false,
-        reason: 'success'
-      };
-    }
-
-    // Derrota anticipada: es matemáticamente imposible ganar
-    // Si los pares encontrados + movimientos restantes < pares requeridos → perdió
-    const movesLeft = this.config.maxMoves - movesUsed;
-    const maxPossibleMatches = matchesFound + movesLeft;
-    if (maxPossibleMatches < this.config.requiredPairs) {
-      return {
-        hasWon: false,
-        hasFailed: true,
-        reason: 'max_moves'
-      };
-    }
-
-    // Derrota: se acabaron los movimientos
-    if (movesUsed >= this.config.maxMoves) {
-      return {
-        hasWon: false,
-        hasFailed: true,
-        reason: 'max_moves'
-      };
-    }
-
-    // Derrota: se acabó el tiempo
-    if (timeRemaining <= 0) {
-      return {
-        hasWon: false,
-        hasFailed: true,
-        reason: 'time_up'
-      };
-    }
-
-    // Juego en progreso
-    return {
-      hasWon: false,
-      hasFailed: false
-    };
-  }
-
-  /**
-   * Calcula el puntaje basado en tiempo y movimientos
-   */
-  calculateScore(movesUsed: number, timeElapsed: number): number {
-    const baseScore = 1000;
-    const movePenalty = (movesUsed - 1) * 100; // Penalización por movimientos extra
-    const timeBonus = Math.max(0, this.config.gameTime - timeElapsed) * 2;
-
-    return Math.max(0, baseScore - movePenalty + timeBonus);
-  }
-
-  /**
-   * Obtiene la configuración actual
-   */
-  getConfig(): GameConfig {
-    return { ...this.config };
-  }
+  return shuffled;
 }
 
-// Exportar instancia por defecto
-export const memoService = new MemoService();
+/**
+ * Cartas de una partida: sortea los íconos, arma los pares y los mezcla.
+ * El orden del array es el orden en el tablero.
+ */
+export function createCards(): MemoCard[] {
+  const icons = shuffle(CARD_ICON_IDS).slice(0, GAME_CONFIG.totalPairs);
+
+  const cards = icons.flatMap((icon) =>
+    [0, 1].map((copy): MemoCard => ({
+      id: `card-${icon}-${copy}`,
+      icon,
+      isFlipped: false,
+      isMatched: false,
+    }))
+  );
+
+  return shuffle(cards);
+}
+
+/**
+ * Tres cartas de premio, una sola ganadora, en orden aleatorio
+ */
+export function createPrizeCards(): PrizeCard[] {
+  return shuffle([
+    { id: 'prize-0', hasPrize: true },
+    { id: 'prize-1', hasPrize: false },
+    { id: 'prize-2', hasPrize: false },
+  ]);
+}
+
+/**
+ * Estado de la partida después de resolver un intento.
+ * El tiempo agotado se trata aparte: lo decide el reloj.
+ */
+export function evaluateRound(matchesFound: number, movesUsed: number): RoundOutcome {
+  if (matchesFound >= GAME_CONFIG.requiredPairs) {
+    return 'won';
+  }
+
+  // Derrota anticipada: ni acertando todos los intentos que quedan se llega a los pares requeridos.
+  // Cubre también el caso de intentos agotados (movesLeft = 0).
+  const movesLeft = GAME_CONFIG.maxMoves - movesUsed;
+  if (matchesFound + movesLeft < GAME_CONFIG.requiredPairs) {
+    return 'lost';
+  }
+
+  return 'playing';
+}

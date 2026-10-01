@@ -59,16 +59,109 @@
     animation: waiting-hint 2s ease-in-out infinite;
   }
 
-  /* Sacudida de las cartas de un par errado */
-  .animate-shake {
+  /* Carta que gira en 3D: la usan las cartas del tablero y las de premio.
+     - .flip-card pone la perspectiva; .flip-card__inner es lo único que rota.
+     - Las dos caras están siempre montadas, espalda con espalda; backface-visibility oculta
+       la que queda de espaldas.
+     - .flip-card__inner no puede llevar overflow, opacity, filter ni contain: paint:
+       cualquiera de ellos aplana el 3D y se verían las dos caras a la vez.
+     - will-change fijo: cada carta tiene su capa desde el inicio (~350 KB por capa en la
+       tablet), en vez de crearla y destruirla en cada giro.
+     La duración llega por --flip-ms desde el componente, que la toma de memoService. */
+  .flip-card {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    perspective: 1200px;
+    transition: scale 150ms ease-out, opacity 300ms ease-out;
+  }
+
+  .flip-card__inner {
+    display: block;
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transition: transform var(--flip-ms, 300ms) ease-out;
+    will-change: transform;
+  }
+
+  .flip-card[data-flipped="true"] .flip-card__inner {
+    transform: rotateY(180deg);
+  }
+
+  .flip-card__face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: var(--card-radius, 1rem);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .flip-card__face--front {
+    transform: rotateY(180deg);
+  }
+
+  /* Cartas del tablero. El toque usa `scale` y la sacudida usa `transform`:
+     son propiedades distintas, no se pisan entre sí ni con el giro. */
+  .memo-card[data-state="hidden"]:active {
+    scale: 0.96;
+  }
+
+  .memo-card[data-state="matched"] {
+    scale: 0.95;
+  }
+
+  /* Par errado: se sacude mientras queda a la vista */
+  .memo-card[data-mismatch="true"] {
     animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
+  }
+
+  /* Tablero bloqueado (memorizando o resolviendo un par): las cartas no reciben toques */
+  .game-board[data-locked="true"] .memo-card {
+    pointer-events: none;
+  }
+
+  .prize-card:not(:disabled):active {
+    scale: 0.96;
+  }
+
+  .prize-card:disabled {
+    cursor: default;
+  }
+
+  /* Entrada de un elemento: sube y aparece. Se escalona con animation-delay. */
+  .enter-up {
+    animation: enter-up 300ms ease-out both;
+  }
+
+  /* Fundido entre pantallas (utils/screenTransition.ts) */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 250ms;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .waiting-logo,
     .waiting-hint,
-    .animate-shake {
+    .memo-card[data-mismatch="true"],
+    .enter-up {
       animation: none;
+    }
+
+    .flip-card,
+    .flip-card__inner {
+      transition: none;
+    }
+
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
     }
   }
 }
@@ -81,6 +174,13 @@
 @keyframes waiting-hint {
   0%, 100% { transform: translateY(0); opacity: 0.7; }
   50% { transform: translateY(-10px); opacity: 1; }
+}
+
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
 }
 
 @keyframes shake {

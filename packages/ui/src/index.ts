@@ -1,1 +1,1 @@
-export { MassiveConfetti } from './components/MassiveConfetti'
+export { MassiveConfetti, preloadConfetti } from './components/MassiveConfetti'

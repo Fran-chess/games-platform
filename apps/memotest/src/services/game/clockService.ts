@@ -1,121 +1,43 @@
 /**
- * Clock Service - Reloj centralizado a 1 Hz con corrección de deriva
- * Evita rAF a 60 FPS, optimiza performance en tablets
+ * Clock Service - Cuenta regresiva a 1 Hz con corrección de deriva
+ * Un tick por segundo alcanza para el HUD y evita trabajo por frame
  * @module clockService
  */
 
 type ClockCallback = (timeLeft: number) => void;
 
 class ClockService {
-  private intervalId: number | null = null;
-  private startTime: number = 0;
-  private duration: number = 0;
-  private elapsed: number = 0;
-  private callback: ClockCallback | null = null;
-  private isRunning: boolean = false;
+  private intervalId: ReturnType<typeof setInterval> | null = null;
 
   /**
-   * Inicia el reloj
+   * Inicia una cuenta regresiva y reemplaza a la anterior, si había una
    * @param seconds Duración en segundos
-   * @param onTick Callback que recibe el tiempo restante cada segundo
+   * @param onTick Recibe el tiempo restante: al iniciar y luego una vez por segundo, hasta 0
    */
   start(seconds: number, onTick: ClockCallback): void {
-    this.stop(); // Cancelar reloj previo si existe
+    this.stop();
 
-    this.duration = seconds;
-    this.elapsed = 0;
-    this.callback = onTick;
-    this.isRunning = true;
-    this.startTime = Date.now();
+    const startTime = Date.now();
+    onTick(seconds);
 
-    // Emitir inmediatamente el valor inicial
-    if (this.callback) {
-      this.callback(this.duration);
-    }
+    this.intervalId = setInterval(() => {
+      // Corrección de deriva: el tiempo restante sale del reloj real, no de contar ticks
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      const timeLeft = Math.max(0, seconds - elapsed);
 
-    // Intervalo a 1 Hz con corrección de deriva
-    this.intervalId = window.setInterval(() => {
-      if (!this.isRunning) return;
-
-      const now = Date.now();
-      const actualElapsed = Math.floor((now - this.startTime) / 1000);
-
-      // Corrección de deriva: usar tiempo real, no acumulado
-      this.elapsed = actualElapsed;
-      const timeLeft = Math.max(0, this.duration - this.elapsed);
-
-      if (this.callback) {
-        this.callback(timeLeft);
-      }
-
-      // Detener al llegar a 0
+      // Se detiene antes de avisar: en 0 el callback puede iniciar la cuenta siguiente
       if (timeLeft === 0) {
         this.stop();
       }
+      onTick(timeLeft);
     }, 1000);
   }
 
-  /**
-   * Detiene el reloj
-   */
   stop(): void {
     if (this.intervalId !== null) {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
-    this.isRunning = false;
-    this.callback = null;
-  }
-
-  /**
-   * Pausa el reloj (mantiene el tiempo actual)
-   */
-  pause(): void {
-    if (this.intervalId !== null) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-    }
-    this.isRunning = false;
-  }
-
-  /**
-   * Resume el reloj pausado
-   */
-  resume(): void {
-    if (this.isRunning || !this.callback) return;
-
-    this.isRunning = true;
-    const remainingTime = this.duration - this.elapsed;
-    this.startTime = Date.now() - (this.elapsed * 1000);
-
-    this.intervalId = window.setInterval(() => {
-      if (!this.isRunning) return;
-
-      const now = Date.now();
-      const actualElapsed = Math.floor((now - this.startTime) / 1000);
-
-      this.elapsed = actualElapsed;
-      const timeLeft = Math.max(0, this.duration - this.elapsed);
-
-      if (this.callback) {
-        this.callback(timeLeft);
-      }
-
-      if (timeLeft === 0) {
-        this.stop();
-      }
-    }, 1000);
-  }
-
-  /**
-   * Obtiene el estado actual del reloj
-   */
-  getState(): { isRunning: boolean; elapsed: number; duration: number } {
-    return {
-      isRunning: this.isRunning,
-      elapsed: this.elapsed,
-      duration: this.duration,
-    };
   }
 }
 
