@@ -109,6 +109,24 @@ export async function stopFrameRecorder(page: Page): Promise<FrameStats> {
 }
 
 /**
+ * Field-by-field median of several runs of the same metrics object.
+ * A single run on a shared machine is noisy: one background task can multiply the long tasks.
+ */
+export function medianOf<T>(runs: T[]): T {
+  const [first] = runs;
+  if (typeof first === 'number') {
+    const sorted = (runs as number[]).slice().sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return (sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2) as T;
+  }
+  if (first && typeof first === 'object') {
+    const keys = Object.keys(first) as (keyof T)[];
+    return Object.fromEntries(keys.map((key) => [key, medianOf(runs.map((run) => run[key]))])) as T;
+  }
+  return first;
+}
+
+/**
  * Slow the CPU down by `rate` (Chrome DevTools "CPU throttling").
  * A desktop running the tests is several times faster than the event tablets.
  */
@@ -167,18 +185,20 @@ export async function getCoreWebVitals(page: Page) {
         metrics.lcp = lastEntry.renderTime || lastEntry.loadTime;
       }).observe({ type: 'largest-contentful-paint', buffered: true });
 
-      // FCP desde paint timing; TTFB desde navigation timing
-      const fcpEntry = performance.getEntriesByName('first-contentful-paint')[0];
-      if (fcpEntry) {
-        metrics.fcp = fcpEntry.startTime;
-      }
+      // TTFB desde navigation timing
       const navTiming = performance.getEntriesByType('navigation')[0] as any;
       if (navTiming) {
         metrics.ttfb = navTiming.responseStart - navTiming.requestStart;
       }
 
-      // Retornar después de timeout
-      setTimeout(() => resolve(metrics), 2000);
+      // Retornar después de timeout. FCP se lee al final: puede no haber ocurrido todavía
+      setTimeout(() => {
+        const fcpEntry = performance.getEntriesByName('first-contentful-paint')[0];
+        if (fcpEntry) {
+          metrics.fcp = fcpEntry.startTime;
+        }
+        resolve(metrics);
+      }, 2000);
     });
   });
 }

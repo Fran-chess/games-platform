@@ -1,0 +1,62 @@
+{
+  "memotest-load": {
+    "scripts": {
+      "requests": 8,
+      "transferKB": 178,
+      "parsedKB": 571.6
+    }
+  },
+  "memotest-round-win": {
+    "runs": 3,
+    "tapToMemorizeMs": 4168,
+    "intro": {
+      "frames": 453,
+      "durationMs": 9699.6,
+      "avgFrameMs": 20.8,
+      "p95FrameMs": 49.9,
+      "maxFrameMs": 233.3,
+      "jankFrames": 28,
+      "longTasks": {
+        "count": 14,
+        "totalMs": 1325,
+        "maxMs": 204
+      }
+    },
+    "gameplay": {
+      "frames": 276,
+      "durationMs": 6582.9,
+      "avgFrameMs": 24.4,
+      "p95FrameMs": 50,
+      "maxFrameMs": 116.7,
+      "jankFrames": 26,
+      "longTasks": {
+        "count": 5,
+        "totalMs": 389,
+        "maxMs": 115
+      }
+    },
+    "storageWrites": 32
+  },
+  "memotest-round-loss": {
+    "runs": 1,
+    "gameplay": {
+      "frames": 95,
+      "durationMs": 3383.2,
+      "avgFrameMs": 35.6,
+      "p95FrameMs": 66.7,
+      "maxFrameMs": 416.6,
+      "jankFrames": 11,
+      "longTasks": {
+        "count": 6,
+        "totalMs": 908,
+        "maxMs": 324
+      }
+    }
+  },
+  "memotest-memory": {
+    "rounds": 5,
+    "heapBeforeMB": 3.565113067626953,
+    "heapAfterMB": 5.265316009521484,
+    "increaseMB": 1.7002029418945312
+  }
+}

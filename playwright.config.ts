@@ -60,7 +60,8 @@ export default defineConfig({
   // Custom reporter for performance metrics
   reporter: [
     ['list'],
-    ['html', { outputFolder: '.playwright-report' }],
+    // open: 'never' keeps a failed run from blocking the terminal with the report server
+    ['html', { outputFolder: '.playwright-report', open: 'never' }],
     ['./tests/reporters/performance-reporter.ts'],
   ],
 });
