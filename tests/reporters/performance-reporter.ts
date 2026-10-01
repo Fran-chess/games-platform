@@ -2,6 +2,33 @@ import type { Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 import * as fs from 'fs';
 import * as path from 'path';
 
+interface MetricRow {
+  label: string;
+  unit: string;
+  value: (metrics: Record<string, any>) => number | undefined;
+}
+
+const MEMOTEST_ROWS: MetricRow[] = [
+  { label: 'Load time', unit: 'ms', value: (m) => m['memotest-load']?.loadTime },
+  { label: 'LCP', unit: 'ms', value: (m) => m['memotest-load']?.vitals?.lcp },
+  { label: 'FCP', unit: 'ms', value: (m) => m['memotest-load']?.vitals?.fcp },
+  { label: 'JavaScript transferred', unit: 'KB', value: (m) => m['memotest-load']?.scripts?.transferKB },
+  { label: 'JavaScript parsed', unit: 'KB', value: (m) => m['memotest-load']?.scripts?.parsedKB },
+  { label: 'Tap to cards visible', unit: 'ms', value: (m) => m['memotest-round-win']?.tapToMemorizeMs },
+  { label: 'Intro: frame p95', unit: 'ms', value: (m) => m['memotest-round-win']?.intro?.p95FrameMs },
+  { label: 'Intro: worst frame', unit: 'ms', value: (m) => m['memotest-round-win']?.intro?.maxFrameMs },
+  { label: 'Intro: janky frames', unit: '', value: (m) => m['memotest-round-win']?.intro?.jankFrames },
+  { label: 'Intro: long tasks (total)', unit: 'ms', value: (m) => m['memotest-round-win']?.intro?.longTasks?.totalMs },
+  { label: 'Winning round: frame p95', unit: 'ms', value: (m) => m['memotest-round-win']?.gameplay?.p95FrameMs },
+  { label: 'Winning round: worst frame', unit: 'ms', value: (m) => m['memotest-round-win']?.gameplay?.maxFrameMs },
+  { label: 'Winning round: janky frames', unit: '', value: (m) => m['memotest-round-win']?.gameplay?.jankFrames },
+  { label: 'Winning round: long tasks (total)', unit: 'ms', value: (m) => m['memotest-round-win']?.gameplay?.longTasks?.totalMs },
+  { label: 'Losing round: worst frame', unit: 'ms', value: (m) => m['memotest-round-loss']?.gameplay?.maxFrameMs },
+  { label: 'Losing round: long tasks (total)', unit: 'ms', value: (m) => m['memotest-round-loss']?.gameplay?.longTasks?.totalMs },
+  { label: 'localStorage writes per round', unit: '', value: (m) => m['memotest-round-win']?.storageWrites },
+  { label: 'Heap growth after 5 rounds', unit: 'MB', value: (m) => m['memotest-memory']?.increaseMB },
+];
+
 class PerformanceReporter implements Reporter {
   private results: any[] = [];
 
@@ -56,47 +83,7 @@ class PerformanceReporter implements Reporter {
 
     // ========== MEMOTEST ==========
     md += '## Memotest\n\n';
-    md += '| Metric | Value | Status |\n';
-    md += '|--------|-------|--------|\n';
-
-    if (metrics['memotest-load']) {
-      const { loadTime, vitals } = metrics['memotest-load'];
-      md += `| Load Time | ${loadTime}ms | ${loadTime < 3000 ? '✅' : '❌'} |\n`;
-      if (vitals?.lcp) {
-        md += `| LCP | ${vitals.lcp.toFixed(0)}ms | ${vitals.lcp < 2500 ? '✅' : '❌'} |\n`;
-      }
-      if (vitals?.fcp) {
-        md += `| FCP | ${vitals.fcp.toFixed(0)}ms | ${vitals.fcp < 1800 ? '✅' : '❌'} |\n`;
-      }
-    }
-
-    if (metrics['memotest-fps']) {
-      const { fps } = metrics['memotest-fps'];
-      md += `| FPS (flip) | ${fps.toFixed(1)} | ${fps > 45 ? '✅' : '❌'} |\n`;
-    }
-
-    if (metrics['memotest-memory']) {
-      const { memoryBefore, memoryAfter, increase } = metrics['memotest-memory'];
-      if (increase !== undefined) {
-        md += `| Memory Increase | ${increase.toFixed(1)}MB | ${increase < 15 ? '✅' : '❌'} |\n`;
-      }
-      if (memoryBefore !== undefined) {
-        md += `| Memory (before) | ${memoryBefore.toFixed(1)}MB | ℹ️ |\n`;
-      }
-      if (memoryAfter !== undefined) {
-        md += `| Memory (after) | ${memoryAfter.toFixed(1)}MB | ℹ️ |\n`;
-      }
-    }
-
-    if (metrics['memotest-stress']) {
-      const { fps, memory } = metrics['memotest-stress'];
-      if (fps !== undefined) {
-        md += `| FPS (stress) | ${fps.toFixed(1)} | ${fps > 40 ? '✅' : '❌'} |\n`;
-      }
-      if (memory !== undefined) {
-        md += `| Memory (stress) | ${memory.toFixed(1)}MB | ℹ️ |\n`;
-      }
-    }
+    md += this.memotestTable(metrics);
 
     // ========== ROULETTE ==========
     md += '\n## Roulette\n\n';
@@ -147,6 +134,30 @@ class PerformanceReporter implements Reporter {
       }
     }
 
+    return md;
+  }
+
+  /**
+   * Memotest table. When benchmarks/memotest-before.json exists (a saved run of the
+   * same tests on an earlier version of the game) each row also shows that value.
+   */
+  private memotestTable(metrics: Record<string, any>): string {
+    const beforePath = path.join(__dirname, '../../benchmarks/memotest-before.json');
+    const before: Record<string, any> | null = fs.existsSync(beforePath)
+      ? JSON.parse(fs.readFileSync(beforePath, 'utf-8'))
+      : null;
+
+    const format = (value: number | undefined, unit: string) =>
+      value === undefined ? '-' : `${Math.round(value * 10) / 10}${unit}`;
+
+    let md = before ? '| Metric | Before | Now |\n|--------|--------|-----|\n' : '| Metric | Value |\n|--------|-------|\n';
+    for (const row of MEMOTEST_ROWS) {
+      const now = row.value(metrics);
+      if (now === undefined) continue;
+      md += before
+        ? `| ${row.label} | ${format(row.value(before), row.unit)} | ${format(now, row.unit)} |\n`
+        : `| ${row.label} | ${format(now, row.unit)} |\n`;
+    }
     return md;
   }
 }

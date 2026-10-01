@@ -61,6 +61,7 @@ export default function Home() {
             className="absolute inset-0 z-50"
           >
             <div
+              data-testid="waiting-screen"
               onClick={handleStartGame}
               className="h-full cursor-pointer"
             >

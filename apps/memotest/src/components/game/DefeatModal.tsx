@@ -71,6 +71,7 @@ export function DefeatModal({ reason = 'max_moves' }: DefeatModalProps) {
 
   const modalContent = (
     <motion.div
+      data-testid="defeat-screen"
       className="fixed inset-0 z-50 flex items-center justify-center p-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -139,6 +140,7 @@ export function DefeatModal({ reason = 'max_moves' }: DefeatModalProps) {
           >
             {/* Botón primario - Volver a jugar */}
             <motion.button
+              data-testid="play-again"
               onClick={handlePlayAgain}
               className="bg-gradient-to-r from-cyan-400 via-cyan-500 to-teal-500 text-white px-10 py-4 rounded-2xl text-xl font-black shadow-[0_8px_32px_rgba(6,182,212,0.4)] border-2 border-white/40 min-h-[60px] flex-1 max-w-xs"
               whileTap={{ scale: 0.96 }}
@@ -153,6 +155,7 @@ export function DefeatModal({ reason = 'max_moves' }: DefeatModalProps) {
 
             {/* Botón secundario - Volver al inicio */}
             <motion.button
+              data-testid="back-to-start"
               onClick={handleBackToStart}
               className="bg-transparent text-white px-10 py-4 rounded-2xl text-xl font-bold border-2 border-white/60 hover:bg-white/10 min-h-[60px] flex-1 max-w-xs"
               whileTap={{ scale: 0.96 }}

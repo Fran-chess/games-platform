@@ -130,6 +130,7 @@ export function PrizePhase() {
                 >
                   {/* Card interactiva - Sin 3D pesado */}
                   <motion.div
+                    data-testid="prize-card"
                     className={`
                       relative w-full h-full rounded-3xl cursor-pointer
                       flex items-center justify-center min-h-[44px] min-w-[44px]
@@ -259,6 +260,7 @@ export function PrizePhase() {
           // Pantalla final optimizada
           <motion.div
             key="result"
+            data-testid="prize-result"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
@@ -303,6 +305,7 @@ export function PrizePhase() {
 
                 <div className="flex items-center justify-center gap-6 pt-4 w-full">
                   <motion.button
+                    data-testid="play-again"
                     onClick={handlePlayAgain}
                     className="bg-gradient-to-r from-cyan-400 to-teal-500 text-white px-10 py-4 rounded-2xl text-xl font-black shadow-lg border border-white/30 min-h-[60px] flex-1 max-w-xs"
                     whileTap={{ scale: 0.96 }}
@@ -312,6 +315,7 @@ export function PrizePhase() {
                   </motion.button>
 
                   <motion.button
+                    data-testid="back-to-start"
                     onClick={() => {
                       if ('vibrate' in navigator) navigator.vibrate(20);
                       resetGame();

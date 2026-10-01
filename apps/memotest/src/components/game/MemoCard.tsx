@@ -64,6 +64,9 @@ export const MemoCard = memo(function MemoCard({
   return (
     <motion.div
       ref={cardRef}
+      data-testid="memo-card"
+      data-state={isMatched ? 'matched' : isFlipped ? 'flipped' : 'hidden'}
+      data-icon={icon}
       className={`
         relative w-full h-full cursor-pointer
         transform-gpu

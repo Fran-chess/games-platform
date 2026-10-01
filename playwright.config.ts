@@ -25,6 +25,10 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3001',
+        // Lenovo Tab M11 in landscape, as used at the events
+        viewport: { width: 1280, height: 800 },
+        deviceScaleFactor: 1.5,
+        hasTouch: true,
       },
     },
     {
