@@ -3,10 +3,28 @@
  * Centraliza las reglas y mecánicas del juego
  */
 
+/**
+ * Íconos disponibles para las cartas (set "Cuidados Paliativos").
+ * Cada partida sortea `totalPairs` de ellos. Los dibujos están en components/game/cardIcons.tsx.
+ */
+export const CARD_ICON_IDS = [
+  'manos-corazon',
+  'casa',
+  'mariposa',
+  'familia',
+  'camino',
+  'capsula',
+  'estetoscopio',
+  'tablet-salud',
+  'girasol',
+] as const;
+
+export type CardIconId = (typeof CARD_ICON_IDS)[number];
+
 export interface MemoCard {
   id: string;
   value: string;
-  icon?: string;
+  icon: CardIconId;
   isFlipped: boolean;
   isMatched: boolean;
   position: number;
@@ -57,22 +75,10 @@ export class MemoService {
   }
 
   /**
-   * Genera las cartas para el juego
+   * Genera las cartas para el juego: sortea los íconos de la partida y arma los pares
    */
-  generateCards(theme: 'medical' | 'default' = 'medical'): MemoCard[] {
-    const medicalIcons = [
-      '💉', '🩺', '💊', '🏥',
-      '🧤', '😷', '🧬', '🔬',
-      '🦠', '🧪', '⚕️', '🩻'
-    ];
-
-    const defaultIcons = [
-      '🎯', '🎨', '🎭', '🎪',
-      '🎫', '🎬', '🎮', '🎲'
-    ];
-
-    const icons = theme === 'medical' ? medicalIcons : defaultIcons;
-    const selectedIcons = icons.slice(0, this.config.totalPairs);
+  generateCards(): MemoCard[] {
+    const selectedIcons = this.shuffle(CARD_ICON_IDS).slice(0, this.config.totalPairs);
 
     // Crear pares de cartas
     const cards: MemoCard[] = [];
@@ -89,26 +95,24 @@ export class MemoService {
       }
     });
 
-    // Mezclar usando Fisher-Yates
-    return this.shuffleCards(cards);
+    return this.shuffle(cards).map((card, index) => ({
+      ...card,
+      position: index
+    }));
   }
 
   /**
-   * Mezcla las cartas usando algoritmo Fisher-Yates
+   * Devuelve una copia mezclada (Fisher-Yates)
    */
-  shuffleCards(cards: MemoCard[]): MemoCard[] {
-    const shuffled = [...cards];
+  private shuffle<T>(items: readonly T[]): T[] {
+    const shuffled = [...items];
 
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
 
-    // Asignar posiciones
-    return shuffled.map((card, index) => ({
-      ...card,
-      position: index
-    }));
+    return shuffled;
   }
 
   /**
@@ -121,14 +125,8 @@ export class MemoService {
       { id: 'prize-2', hasPrize: false, isRevealed: false, position: 2 },
     ];
 
-    // Aleatorizar posición de la carta ganadora
-    for (let i = cards.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [cards[i], cards[j]] = [cards[j], cards[i]];
-    }
-
-    // Re-asignar posiciones
-    return cards.map((card, index) => ({
+    // Aleatorizar la posición de la carta ganadora
+    return this.shuffle(cards).map((card, index) => ({
       ...card,
       position: index
     }));

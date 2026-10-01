@@ -174,7 +174,7 @@ export const useMemoStore = create<MemoStore>()(
         // ============= ACTIONS =============
 
         initGame: () => {
-          const cards = memoService.generateCards('medical');
+          const cards = memoService.generateCards();
           const { cardsById, cardOrder } = normalizeCards(cards);
           const currentBest = get().stats.bestScore;
 
@@ -192,7 +192,7 @@ export const useMemoStore = create<MemoStore>()(
         },
 
         startShuffling: () => {
-          const cards = memoService.generateCards('medical');
+          const cards = memoService.generateCards();
           const { cardsById, cardOrder } = normalizeCards(cards);
 
           set({
@@ -249,7 +249,7 @@ export const useMemoStore = create<MemoStore>()(
         },
 
         restartGame: () => {
-          const cards = memoService.generateCards('medical');
+          const cards = memoService.generateCards();
           const { cardsById, cardOrder } = normalizeCards(cards);
           const currentBest = get().stats.bestScore;
 
@@ -622,7 +622,7 @@ export const useCardMatched = (cardId: string) =>
   useMemoStore((state) => state.cardsById[cardId]?.isMatched ?? false);
 
 export const useCardIcon = (cardId: string) =>
-  useMemoStore((state) => state.cardsById[cardId]?.icon ?? '');
+  useMemoStore((state) => state.cardsById[cardId]?.icon);
 
 /**
  * Selector para orden de cartas

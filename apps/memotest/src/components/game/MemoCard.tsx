@@ -9,6 +9,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { memo, useEffect, useRef } from 'react';
 import { useCardFlipped, useCardMatched, useCardIcon, useCardShake, useMemoStore } from '@/store/memoStore';
+import { CardIcon } from './cardIcons';
 
 interface MemoCardProps {
   cardId: string;
@@ -134,16 +135,15 @@ export const MemoCard = memo(function MemoCard({
           }
         `}
       >
-        {/* Contenido de la carta - Ícono */}
-        <div className={`relative z-10 flex items-center justify-center w-28 h-28 rounded-full transition-all duration-150 ${
-          isMatched
-            ? 'bg-white/15 border border-white/30'
-            : 'bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-300/40'
-        }`}>
-          <span className="text-6xl select-none">
-            {icon}
-          </span>
-        </div>
+        {/* Ícono: ocupa el 78% del ancho de la carta. Sobre el degradado verde de la carta
+            emparejada va en verde muy oscuro (contraste 4:1 o más en todo el degradado);
+            el blanco y el azul de marca bajan de 3:1 en alguno de sus extremos. */}
+        {icon && (
+          <CardIcon
+            id={icon}
+            className={`relative z-10 w-[78%] h-auto ${isMatched ? 'text-emerald-950' : 'text-[#0435A3]'}`}
+          />
+        )}
 
         {/* Brillo superior */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent rounded-2xl pointer-events-none" />
