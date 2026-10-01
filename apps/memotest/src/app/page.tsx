@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MemoGame } from '@/components/game/MemoGame';
-import WaitingScreen from '@/components/tv/screens/WaitingScreen';
+import { WaitingScreen } from '@/components/game/WaitingScreen';
 import { useGameState } from '@/store/memoStore';
 
 export default function Home() {

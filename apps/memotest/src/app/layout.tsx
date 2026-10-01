@@ -1,28 +1,29 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import ShellRootClient from "@/components/layout/ShellRootClient";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 
-// [modificación] Configuración de viewport separada según Next.js 15
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#1e40af",
+  // Mismo valor que theme_color en public/manifest.json
+  themeColor: "#0652D4",
 };
 
-// [modificación] Configuración PWA y metadatos optimizados (sin viewport y themeColor)
+// Sin nombre de evento: el juego se reutiliza de un congreso a otro.
+// Next genera desde acá el <link rel="manifest">, los íconos y los metas de PWA.
 export const metadata: Metadata = {
-  title: "MemoTest - Congreso de Enfermería",
-  description: "Juego de memoria interactivo para el Congreso de Enfermería - DarSalud",
+  title: "MemoTest DarSalud",
+  description: "Juego de memoria interactivo para tablets - DarSalud",
   manifest: "/manifest.json",
-  applicationName: "MemoTest Enfermería",
+  applicationName: "MemoTest DarSalud",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "DarSalud",
+    title: "MemoTest DarSalud",
   },
   formatDetection: {
     telephone: false,
@@ -45,24 +46,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="h-full overflow-hidden">
-      <head>
-        <meta charSet="utf-8" />
-        {/* [modificación] Metadatos PWA adicionales */}
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="msapplication-tap-highlight" content="no" />
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
-        {/* [modificación] Link al manifest para PWA */}
-        <link rel="manifest" href="/manifest.json" />
-        {/* Forzar orientación landscape */}
-        <meta name="screen-orientation" content="landscape" />
-        <meta name="x5-orientation" content="landscape" />
-        <meta name="x5-fullscreen" content="true" />
-      </head>
       <body className="bg-game-gradient h-screen font-sans text-white">
         <PerformanceMonitor />
-        <ShellRootClient>{children}</ShellRootClient>
+        <ErrorBoundary>{children}</ErrorBoundary>
       </body>
     </html>
   );

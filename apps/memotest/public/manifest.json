@@ -1,7 +1,7 @@
 {
   "name": "MemoTest DarSalud",
   "short_name": "MemoTest",
-  "description": "Juego de memoria interactivo para tablets - DarSalud Congreso de Enfermería",
+  "description": "Juego de memoria interactivo para tablets - DarSalud",
   "start_url": "/",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
@@ -16,13 +16,25 @@
       "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-144x144.png",
@@ -35,6 +47,5 @@
   "launch_handler": {
     "client_mode": "focus-existing"
   },
-  "id": "darsalud-memotest",
-  "version": "1.0.0"
-} 
+  "id": "darsalud-memotest"
+}
