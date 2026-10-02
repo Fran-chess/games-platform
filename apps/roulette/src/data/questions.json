@@ -1,295 +1,295 @@
 [
   {
-    "id": "aut1",
-    "category": "Autonomía",
-    "text": "¿Qué es el \"envejecimiento saludable\" según la definición de la OMS?",
+    "id": "eti1",
+    "category": "Abordaje ético",
+    "text": "Un paciente con demencia avanzada no puede expresar su voluntad actual, pero antes de perder esa capacidad había manifestado su deseo de no ser reinternado. ¿Qué principio ético orienta principalmente esta decisión?",
     "options": [
-      { "text": "La ausencia total de enfermedades", "correct": false },
-      { "text": "El proceso de desarrollar y mantener la capacidad funcional que permite el bienestar en la vejez", "correct": true },
-      { "text": "Un estado exclusivo de personas sin discapacidad", "correct": false },
-      { "text": "Vivir el mayor número de años posible, sin importar la calidad de vida", "correct": false }
+      { "text": "Autonomía, a través del respeto por sus preferencias previamente expresadas", "correct": true },
+      { "text": "Beneficencia, priorizando lo que el equipo considera mejor en el momento actual", "correct": false },
+      { "text": "Justicia, garantizando el mismo acceso a internación que otros pacientes", "correct": false },
+      { "text": "No maleficencia, evitando cualquier intervención hospitalaria", "correct": false }
     ],
-    "explanation": "La OMS define el envejecimiento saludable como el proceso de desarrollar y mantener la capacidad funcional que permite el bienestar en la vejez; no equivale a la ausencia de enfermedad."
+    "explanation": "Rige la autonomía: las preferencias que la persona expresó cuando todavía podía hacerlo siguen orientando las decisiones sobre su cuidado."
   },
   {
-    "id": "aut2",
-    "category": "Autonomía",
-    "text": "Según el modelo de envejecimiento activo de la OMS, ¿cuáles son sus tres pilares?",
+    "id": "eti2",
+    "category": "Abordaje ético",
+    "text": "Ante un paciente en el que la curación ya no es posible pero persisten síntomas de difícil manejo, ¿cuál es el abordaje terapéutico correcto?",
     "options": [
-      { "text": "Nutrición, ejercicio y sueño", "correct": false },
-      { "text": "Salud, vivienda y economía", "correct": false },
-      { "text": "Salud, seguridad y participación", "correct": true },
-      { "text": "Familia, trabajo y ocio", "correct": false }
+      { "text": "Suspender todo tratamiento, ya que no hay opciones curativas restantes", "correct": false },
+      { "text": "Reorientar el objetivo terapéutico hacia el alivio, el acompañamiento y el sostén de la calidad de vida", "correct": true },
+      { "text": "Derivar automáticamente a internación institucional", "correct": false },
+      { "text": "Priorizar exclusivamente el tratamiento de la enfermedad de base", "correct": false }
     ],
-    "explanation": "El modelo de envejecimiento activo de la OMS se sostiene en tres pilares: salud, seguridad y participación."
+    "explanation": "Cuando la curación ya no es posible, el tratamiento no se suspende: se reorienta hacia el alivio, el acompañamiento y el sostén de la calidad de vida."
   },
   {
-    "id": "aut3",
-    "category": "Autonomía",
-    "text": "¿Qué es la \"fragilidad\" (frailty) en geriatría?",
+    "id": "eti3",
+    "category": "Abordaje ético",
+    "text": "Al ingresar al domicilio, el equipo encuentra rutinas familiares distintas a las del hospital (horarios, objetos, mascotas). ¿Cuál es la conducta más adecuada?",
     "options": [
-      { "text": "Un sinónimo de vejez avanzada", "correct": false },
-      { "text": "Un síndrome clínico de vulnerabilidad fisiológica, con disminución de reserva y resistencia a estresores", "correct": true },
-      { "text": "Una enfermedad genética", "correct": false },
-      { "text": "La pérdida total de movilidad", "correct": false }
+      { "text": "Adaptar el cuidado al entorno y las rutinas de la familia, en lugar de imponer las del equipo", "correct": true },
+      { "text": "Solicitar que la familia modifique el hogar para facilitar los protocolos clínicos", "correct": false },
+      { "text": "Trasladar al paciente a una institución donde se puedan aplicar los protocolos sin modificaciones", "correct": false },
+      { "text": "Mantener los mismos horarios y procedimientos que se usan en internación hospitalaria", "correct": false }
     ],
-    "explanation": "La fragilidad es un síndrome clínico de vulnerabilidad fisiológica en el que disminuyen la reserva y la resistencia frente a estresores. No es sinónimo de vejez avanzada ni de inmovilidad."
+    "explanation": "En el domicilio, el cuidado se adapta al entorno y a las rutinas de la familia; no se imponen las del equipo ni las del hospital."
   },
   {
-    "id": "aut4",
-    "category": "Autonomía",
-    "text": "Desde un enfoque de cuidado centrado en la persona, ¿qué debería priorizarse al planificar el cuidado de alguien con dependencia?",
+    "id": "eti4",
+    "category": "Abordaje ético",
+    "text": "Un familiar pide al equipo que no le informen al paciente su diagnóstico (\"pacto de silencio\"). ¿Qué tensión ética se pone en juego principalmente?",
     "options": [
-      { "text": "Exclusivamente protocolos estandarizados, al margen de la adaptación individual", "correct": false },
-      { "text": "El criterio del equipo de salud", "correct": false },
-      { "text": "La opinión de la familia por sobre todo", "correct": false },
-      { "text": "Las preferencias, valores e historia de vida de la persona, además de sus necesidades clínicas", "correct": true }
+      { "text": "Autonomía del paciente frente al deseo protector de la familia", "correct": true },
+      { "text": "Justicia en el acceso a los recursos del sistema de salud", "correct": false },
+      { "text": "No maleficencia frente a la posibilidad de yatrogenia farmacológica", "correct": false },
+      { "text": "Beneficencia orientada exclusivamente al bienestar del cuidador", "correct": false }
     ],
-    "explanation": "El cuidado centrado en la persona prioriza sus preferencias, valores e historia de vida, integrándolos con sus necesidades clínicas."
-  },
-
-  {
-    "id": "mov1",
-    "category": "Movilidad",
-    "text": "¿Cuántos minutos semanales de actividad aeróbica moderada recomienda la OMS para personas mayores?",
-    "options": [
-      { "text": "60 minutos", "correct": false },
-      { "text": "150 minutos", "correct": true },
-      { "text": "300 minutos", "correct": false },
-      { "text": "30 minutos", "correct": false }
-    ],
-    "explanation": "La OMS recomienda al menos 150 minutos semanales de actividad aeróbica de intensidad moderada para las personas mayores."
-  },
-  {
-    "id": "mov2",
-    "category": "Movilidad",
-    "text": "¿Qué tipo de ejercicio es más eficaz para prevenir caídas?",
-    "options": [
-      { "text": "Solo ejercicio aeróbico", "correct": false },
-      { "text": "Entrenamiento combinado de equilibrio y fuerza", "correct": true },
-      { "text": "Estiramiento pasivo", "correct": false },
-      { "text": "Ejercicios respiratorios", "correct": false }
-    ],
-    "explanation": "El entrenamiento combinado de equilibrio y fuerza es la intervención más eficaz para reducir el riesgo de caídas en personas mayores."
-  },
-  {
-    "id": "mov3",
-    "category": "Movilidad",
-    "text": "¿Qué es la \"dinapenia\"?",
-    "options": [
-      { "text": "Pérdida de masa ósea", "correct": false },
-      { "text": "Pérdida de fuerza muscular", "correct": true },
-      { "text": "Un tipo de arritmia cardíaca", "correct": false },
-      { "text": "La capacidad pulmonar", "correct": false }
-    ],
-    "explanation": "La dinapenia es la pérdida de fuerza muscular asociada a la edad. No debe confundirse con la pérdida de masa ósea."
-  },
-  {
-    "id": "mov4",
-    "category": "Movilidad",
-    "text": "La sarcopenia se define principalmente como:",
-    "options": [
-      { "text": "Pérdida progresiva de masa y fuerza muscular", "correct": true },
-      { "text": "Pérdida de masa ósea", "correct": false },
-      { "text": "Deterioro cognitivo leve", "correct": false },
-      { "text": "Pérdida de tejido adiposo", "correct": false }
-    ],
-    "explanation": "La sarcopenia es la pérdida progresiva de masa y fuerza muscular asociada al envejecimiento, con impacto en la funcionalidad y el riesgo de caídas."
+    "explanation": "El pacto de silencio enfrenta la autonomía del paciente, que tiene derecho a conocer su situación, con el deseo protector de la familia."
   },
 
   {
-    "id": "ali1",
-    "category": "Alimentación",
-    "text": "¿Qué cambio fisiológico frecuente reduce el apetito en el envejecimiento?",
+    "id": "tra1",
+    "category": "Transiciones",
+    "text": "Roberto recibe el alta tras suspender el tratamiento oncológico activo, y su esposa pasa a ser su cuidadora principal sin experiencia previa. ¿Qué transiciones atraviesa esta familia de forma simultánea?",
     "options": [
-      { "text": "Aumento de la sensibilidad al gusto y olfato", "correct": false },
-      { "text": "Disminución del gusto/olfato y saciedad temprana", "correct": true },
-      { "text": "Aumento del vaciamiento gástrico", "correct": false },
-      { "text": "Mayor producción de ghrelina", "correct": false }
+      { "text": "Solo una transición de salud-enfermedad", "correct": false },
+      { "text": "Una transición de salud-enfermedad y una situacional (cambio de rol y de entorno)", "correct": true },
+      { "text": "Únicamente una transición organizacional", "correct": false },
+      { "text": "Solo una transición de desarrollo", "correct": false }
     ],
-    "explanation": "Con el envejecimiento disminuyen el gusto y el olfato y aparece saciedad temprana, lo que reduce el apetito y favorece una ingesta insuficiente."
+    "explanation": "La familia atraviesa a la vez una transición de salud-enfermedad y una situacional: la esposa cambia de rol y el cuidado pasa al hogar."
   },
   {
-    "id": "ali2",
-    "category": "Alimentación",
-    "text": "¿Qué nutriente es especialmente importante suplementar por la menor síntesis cutánea en la vejez?",
+    "id": "tra2",
+    "category": "Transiciones",
+    "text": "En la primera visita, antes de explicar el plan de cuidados, el enfermero pregunta \"¿qué entienden de la situación actual?\". ¿Qué está haciendo?",
     "options": [
-      { "text": "Vitamina C", "correct": false },
-      { "text": "Vitamina D", "correct": true },
-      { "text": "Vitamina A", "correct": false },
-      { "text": "Vitamina K", "correct": false }
+      { "text": "Suplementación de rol", "correct": false },
+      { "text": "Valoración de la disposición (readiness)", "correct": true },
+      { "text": "Preparación para la transición", "correct": false },
+      { "text": "Registro de la transición", "correct": false }
     ],
-    "explanation": "La síntesis cutánea de vitamina D disminuye con la edad, por lo que su suplementación es especialmente relevante en personas mayores."
+    "explanation": "Preguntar qué entiende la familia antes de explicar el plan es valorar su disposición (readiness) para la transición."
   },
   {
-    "id": "ali3",
-    "category": "Alimentación",
-    "text": "¿Cuál es la causa más frecuente del déficit de vitamina B12 en personas mayores?",
+    "id": "tra3",
+    "category": "Transiciones",
+    "text": "El enfermero ajusta la bomba de analgesia y luego enseña a la esposa a hacerlo ella misma en las visitas siguientes. ¿Qué ilustra mejor esta secuencia?",
     "options": [
-      { "text": "Exceso de exposición solar", "correct": false },
-      { "text": "Menor absorción gástrica", "correct": true },
-      { "text": "Excesivo consumo de carne", "correct": false },
-      { "text": "No es un déficit frecuente en esta población", "correct": false }
+      { "text": "Suplementación de rol, con transferencia gradual", "correct": true },
+      { "text": "Valoración de la disposición", "correct": false },
+      { "text": "Preparación para la transición", "correct": false },
+      { "text": "Planificación anticipada de decisiones", "correct": false }
     ],
-    "explanation": "La causa más frecuente del déficit de vitamina B12 en personas mayores es la menor absorción a nivel gástrico, no la falta de consumo."
+    "explanation": "Es suplementación de rol: el enfermero primero asume la tarea y después la transfiere gradualmente a la cuidadora."
   },
   {
-    "id": "ali4",
-    "category": "Alimentación",
-    "text": "La ingesta proteica orientativa para prevenir sarcopenia en la persona mayor sana suele ser:",
+    "id": "tra4",
+    "category": "Transiciones",
+    "text": "¿Qué indicador permite reconocer que una familia está logrando una transición saludable en el cuidado domiciliario?",
     "options": [
-      { "text": "0.8 g/kg/día", "correct": false },
-      { "text": "1.0-1.2 g/kg/día (o más si hay enfermedad)", "correct": true },
-      { "text": "2.5-3 g/kg/día (o menos si hay enfermedad)", "correct": false },
-      { "text": "0.5 g/kg/día", "correct": false }
+      { "text": "Que el cuidador principal desarrolle sentido de dominio y afrontamiento de la situación", "correct": true },
+      { "text": "Que la familia delegue por completo el cuidado en el equipo de salud", "correct": false },
+      { "text": "Que se reduzca la frecuencia de visitas domiciliarias", "correct": false },
+      { "text": "Que el paciente sea reinternado antes del fallecimiento", "correct": false }
     ],
-    "explanation": "Para prevenir la sarcopenia, la ingesta proteica orientativa en la persona mayor sana es de 1.0 a 1.2 g/kg/día, y puede ser mayor en presencia de enfermedad."
-  },
-
-  {
-    "id": "cog1",
-    "category": "Salud cognitiva",
-    "text": "¿Qué diferencia al deterioro cognitivo leve (DCL) de la demencia?",
-    "options": [
-      { "text": "Son lo mismo con distinto nombre", "correct": false },
-      { "text": "En el DCL se preservan las actividades básicas; en la demencia hay compromiso funcional significativo", "correct": true },
-      { "text": "El DCL siempre es reversible y la demencia nunca", "correct": false },
-      { "text": "El DCL solo afecta la memoria y la demencia solo el lenguaje", "correct": false }
-    ],
-    "explanation": "En el deterioro cognitivo leve se preservan las actividades básicas de la vida diaria; en la demencia existe un compromiso funcional significativo."
-  },
-  {
-    "id": "cog2",
-    "category": "Salud cognitiva",
-    "text": "¿Cuál es la causa más frecuente de demencia en personas mayores?",
-    "options": [
-      { "text": "Demencia vascular", "correct": false },
-      { "text": "Enfermedad de Alzheimer", "correct": true },
-      { "text": "Demencia frontotemporal", "correct": false },
-      { "text": "Enfermedad de Parkinson", "correct": false }
-    ],
-    "explanation": "La enfermedad de Alzheimer es la causa más frecuente de demencia en personas mayores."
-  },
-  {
-    "id": "cog3",
-    "category": "Salud cognitiva",
-    "text": "La hidrocefalia normotensiva causa un deterioro cognitivo que es:",
-    "options": [
-      { "text": "Exclusivamente motor", "correct": false },
-      { "text": "Siempre irreversible", "correct": false },
-      { "text": "Inexistente", "correct": false },
-      { "text": "Potencialmente reversible", "correct": true }
-    ],
-    "explanation": "La hidrocefalia normotensiva produce un deterioro cognitivo potencialmente reversible, por lo que su detección oportuna es clave."
-  },
-  {
-    "id": "cog4",
-    "category": "Salud cognitiva",
-    "text": "En el envejecimiento no patológico, ¿qué tipo de memoria tiende a mostrar mayor declive?",
-    "options": [
-      { "text": "La memoria semántica", "correct": false },
-      { "text": "La memoria episódica", "correct": true },
-      { "text": "La memoria procedimental", "correct": false },
-      { "text": "La memoria implícita", "correct": false }
-    ],
-    "explanation": "En el envejecimiento no patológico, la memoria episódica es la que muestra mayor declive, mientras que la semántica, la procedimental y la implícita se conservan mejor."
+    "explanation": "Una transición saludable se reconoce cuando el cuidador principal desarrolla sentido de dominio y capacidad de afrontar la situación."
   },
 
   {
-    "id": "red1",
-    "category": "Red social y bienestar",
-    "text": "Durante los períodos de aislamiento social prolongado en instituciones de larga estadía, ¿qué se observó con mayor frecuencia en personas mayores?",
+    "id": "tray1",
+    "category": "Trayectorias",
+    "text": "Juan, con insuficiencia cardíaca avanzada, tiene tres internaciones por descompensación en un año y cada vez vuelve \"algo peor\". ¿Qué estrategia resulta más apropiada?",
     "options": [
-      { "text": "Aumento de síntomas ansiosos y depresivos, junto con mayor sedentarismo", "correct": true },
-      { "text": "Aumento de síntomas ansiosos y depresivos, sin cambios significativos en los niveles de actividad física", "correct": false },
-      { "text": "Mayor sedentarismo, sin un incremento proporcional en los síntomas de ansiedad o depresión", "correct": false },
-      { "text": "Alteraciones del sueño y mayor sedentarismo, sin cambios relevantes en el estado de ánimo", "correct": false }
+      { "text": "Trabajar un plan de crisis y directivas anticipadas, dado que cualquier episodio puede ser el último", "correct": true },
+      { "text": "Aumentar visitas solo en la última semana de vida", "correct": false },
+      { "text": "Suspender el seguimiento domiciliario tras cada internación", "correct": false },
+      { "text": "Aplicar el mismo esquema que a un paciente oncológico terminal", "correct": false }
     ],
-    "explanation": "El aislamiento social prolongado en instituciones de larga estadía se asoció con un aumento de síntomas ansiosos y depresivos junto con mayor sedentarismo."
+    "explanation": "En la insuficiencia de órgano, cualquier descompensación puede ser la última; por eso conviene trabajar un plan de crisis y directivas anticipadas."
   },
   {
-    "id": "red2",
-    "category": "Red social y bienestar",
-    "text": "La soledad crónica en personas mayores masculinas se asocia en la literatura con:",
+    "id": "tray2",
+    "category": "Trayectorias",
+    "text": "Elena, 88 años, demencia avanzada, dependencia total e infecciones respiratorias repetidas, con declive lento y sostenido. ¿Cuál debería ser el foco del cuidado?",
     "options": [
-      { "text": "Deterioro cognitivo, cuadros depresivos y mayor mortalidad general", "correct": true },
-      { "text": "Deterioro cognitivo y cuadros depresivos, sin impacto significativo sobre la mortalidad", "correct": false },
-      { "text": "Mayor mortalidad general, sin asociación consistente con el estado de ánimo o la cognición", "correct": false },
-      { "text": "Cuadros depresivos y mayor mortalidad, sin asociación consistente con el deterioro cognitivo", "correct": false }
+      { "text": "El confort, la prevención de úlceras y el sostén de la cuidadora", "correct": true },
+      { "text": "La intensificación de estudios diagnósticos para definir un pronóstico exacto", "correct": false },
+      { "text": "La derivación a rehabilitación intensiva para recuperar funcionalidad", "correct": false },
+      { "text": "La suspensión de todo control clínico", "correct": false }
     ],
-    "explanation": "La literatura asocia la soledad crónica en varones mayores con deterioro cognitivo, cuadros depresivos y mayor mortalidad general."
+    "explanation": "En un declive lento por fragilidad y demencia, el foco está en el confort, la prevención de úlceras y el sostén de la cuidadora."
   },
   {
-    "id": "red3",
-    "category": "Red social y bienestar",
-    "text": "¿Qué mide la escala de Lubben?",
+    "id": "tray3",
+    "category": "Trayectorias",
+    "text": "En cáncer de pulmón avanzado, con autonomía sostenida durante meses tras suspender la quimioterapia, ¿qué debería anticipar el equipo hacia el final del curso?",
     "options": [
-      { "text": "Red social", "correct": true },
-      { "text": "Estado nutricional", "correct": false },
-      { "text": "Función cognitiva", "correct": false },
-      { "text": "Riesgo de caídas", "correct": false }
+      { "text": "Un declive funcional rápido, en cuestión de semanas", "correct": true },
+      { "text": "Un declive lento y progresivo a lo largo de años", "correct": false },
+      { "text": "Episodios de descompensación aguda con recuperación parcial entre ellos", "correct": false },
+      { "text": "Estabilidad funcional sostenida hasta el fallecimiento", "correct": false }
     ],
-    "explanation": "La escala de Lubben evalúa la red social de la persona mayor: el tamaño y la frecuencia de contacto con familiares y amigos."
+    "explanation": "En la trayectoria oncológica, la funcionalidad suele mantenerse durante meses y luego cae de forma rápida, en cuestión de semanas."
   },
   {
-    "id": "red4",
-    "category": "Red social y bienestar",
-    "text": "¿Qué se entiende por \"claudicación familiar\" en cuidados paliativos?",
+    "id": "tray4",
+    "category": "Trayectorias",
+    "text": "¿Para qué sirve, en la práctica domiciliaria, identificar la trayectoria de declive de un paciente?",
     "options": [
-      { "text": "Crisis del sistema de cuidado por agotamiento familiar", "correct": true },
-      { "text": "Duelo anticipado del núcleo familiar", "correct": false },
-      { "text": "Reorganización de roles de cuidado", "correct": false },
-      { "text": "Conflicto de comunicación con el equipo tratante", "correct": false }
+      { "text": "Para anticipar el momento de derivación, ajustar la frecuencia de visitas y preparar a la familia para las crisis esperables", "correct": true },
+      { "text": "Para determinar exclusivamente el tipo de analgesia a indicar", "correct": false },
+      { "text": "Para decidir si corresponde informar el diagnóstico al paciente", "correct": false },
+      { "text": "Para definir la cobertura del seguro de salud", "correct": false }
     ],
-    "explanation": "La claudicación familiar es la crisis del sistema de cuidado que se produce por el agotamiento de la familia cuidadora."
+    "explanation": "Conocer la trayectoria permite anticipar el momento de derivación, ajustar la frecuencia de visitas y preparar a la familia para las crisis esperables."
   },
 
   {
-    "id": "mit1",
-    "category": "Mitos",
-    "text": "¿El dolor crónico constante debe considerarse parte \"normal\" del envejecimiento?",
+    "id": "sin1",
+    "category": "Manejo de síntomas",
+    "text": "Un paciente tiene el dolor físico bien controlado, pero el equipo detecta angustia intensa, preocupación económica familiar y búsqueda de sentido religioso. ¿Qué concepto engloba esta situación?",
     "options": [
-      { "text": "Solo parcialmente, según su interferencia funcional", "correct": false },
-      { "text": "Sí, refleja cambios degenerativos propios del envejecimiento", "correct": false },
-      { "text": "No, no es un proceso fisiológico esperado; requiere evaluación", "correct": true },
-      { "text": "No necesariamente, aunque su tratamiento suele ser limitado", "correct": false }
+      { "text": "Dolor total: dimensiones física, emocional, social y espiritual", "correct": true },
+      { "text": "Fatiga por compasión del equipo tratante", "correct": false },
+      { "text": "Claudicación familiar inminente", "correct": false },
+      { "text": "Síndrome de inmovilidad", "correct": false }
     ],
-    "explanation": "El dolor crónico no es un proceso fisiológico esperado del envejecimiento: siempre requiere evaluación y abordaje."
+    "explanation": "El dolor total abarca las dimensiones física, emocional, social y espiritual del sufrimiento, no solo el dolor físico."
   },
   {
-    "id": "mit2",
-    "category": "Mitos",
-    "text": "¿Es cierto que la pérdida auditiva leve en personas mayores no requiere intervención hasta que se vuelva severa?",
+    "id": "sin2",
+    "category": "Manejo de síntomas",
+    "text": "Frente a disnea progresiva en etapa avanzada, ¿qué es central en el abordaje de enfermería domiciliario?",
     "options": [
-      { "text": "Solo amerita intervención cuando compromete ambos oídos por igual", "correct": true },
-      { "text": "Las pérdidas leves no impactan de forma significativa en la comunicación ni en el funcionamiento cotidiano", "correct": false },
-      { "text": "Depende principalmente de si la persona vive acompañada o no", "correct": false },
-      { "text": "La pérdida auditiva no tratada se asocia con mayor riesgo de aislamiento social y deterioro cognitivo, por lo que amerita abordaje temprano", "correct": false }
+      { "text": "Educar a la familia sobre signos de alarma y manejo de la crisis, además del control sintomático", "correct": true },
+      { "text": "Indicar reposo absoluto sin intervención adicional", "correct": false },
+      { "text": "Derivar automáticamente a terapia intensiva ante cualquier episodio", "correct": false },
+      { "text": "Suspender la analgesia para no enmascarar el cuadro respiratorio", "correct": false }
     ],
-    "explanation": "Según el material del congreso, la pérdida auditiva leve amerita intervención cuando compromete ambos oídos por igual."
+    "explanation": "Además del control sintomático, es central educar a la familia sobre los signos de alarma y cómo manejar una crisis de disnea."
   },
   {
-    "id": "mit3",
-    "category": "Mitos",
-    "text": "¿La cirugía debe evitarse siempre en pacientes de edad avanzada, dado el riesgo que implica?",
+    "id": "sin3",
+    "category": "Manejo de síntomas",
+    "text": "La familia pregunta si lo que el paciente exprese en una charla de planificación anticipada queda registrado con valor legal. ¿Qué debe aclarar el equipo?",
     "options": [
-      { "text": "Se decide por valoración integral, no solo por edad", "correct": true },
-      { "text": "La edad contraindica por sí sola la mayoría de las cirugías", "correct": false },
-      { "text": "El riesgo depende casi exclusivamente del tipo de anestesia", "correct": false },
-      { "text": "Solo se indica en cuadros de urgencia, no programados", "correct": false }
+      { "text": "Que lo registrado en la historia clínica orienta al equipo, pero que las directivas con valor legal requieren un trámite formal aparte", "correct": true },
+      { "text": "Que cualquier preferencia mencionada en una visita tiene automáticamente valor legal", "correct": false },
+      { "text": "Que las directivas anticipadas no pueden registrarse en enfermedad avanzada", "correct": false },
+      { "text": "Que solo el médico puede expresar directivas en nombre del paciente", "correct": false }
     ],
-    "explanation": "La indicación quirúrgica en personas mayores se decide mediante una valoración integral; la edad por sí sola no contraindica la cirugía."
+    "explanation": "Lo registrado en la historia clínica orienta al equipo, pero para que las directivas tengan valor legal hace falta un trámite formal aparte."
   },
   {
-    "id": "mit4",
-    "category": "Mitos",
-    "text": "Ante un adulto mayor que olvida ocasionalmente dónde dejó las llaves, ¿debe interpretarse como un signo de demencia?",
+    "id": "sin4",
+    "category": "Manejo de síntomas",
+    "text": "Un paciente en agonía deja de alimentarse por vía oral. ¿Cuál es el enfoque más adecuado desde el cuidado centrado en la persona?",
     "options": [
-      { "text": "No necesariamente, ya que los olvidos ocasionales sin impacto funcional pueden formar parte de cambios cognitivos leves asociados a la edad", "correct": true },
-      { "text": "Sí, cualquier olvido reiterado constituye un signo temprano de deterioro neurodegenerativo", "correct": false },
-      { "text": "Depende exclusivamente de si existen antecedentes familiares de demencia", "correct": false },
-      { "text": "Solo se considera relevante si ocurre en personas mayores de 80 años", "correct": false }
+      { "text": "Explicar a la familia que es un proceso esperable de esta etapa, priorizando el confort sobre la alimentación forzada", "correct": true },
+      { "text": "Indicar sonda nasogástrica de forma sistemática", "correct": false },
+      { "text": "Interpretarlo como un signo de abandono del cuidado por parte de la familia", "correct": false },
+      { "text": "Suspender el acompañamiento mientras se define una conducta nutricional", "correct": false }
     ],
-    "explanation": "Los olvidos ocasionales sin impacto funcional pueden formar parte de los cambios cognitivos leves asociados a la edad y no constituyen, por sí solos, un signo de demencia."
+    "explanation": "Dejar de comer es esperable en la agonía: se acompaña a la familia y se prioriza el confort por sobre la alimentación forzada."
+  },
+
+  {
+    "id": "inn1",
+    "category": "Innovación y proyección",
+    "text": "De noche, un cuidador nota un cambio brusco y contacta al equipo por videollamada para definir si ajustar la medicación o esperar la visita del día siguiente. ¿Qué herramienta está usando?",
+    "options": [
+      { "text": "Teleconsulta", "correct": true },
+      { "text": "Historia de vida digital", "correct": false },
+      { "text": "Plataforma de mensajería personal del equipo", "correct": false },
+      { "text": "Registro narrativo", "correct": false }
+    ],
+    "explanation": "Es una teleconsulta: el equipo evalúa a distancia y decide la conducta sin esperar a la próxima visita presencial."
+  },
+  {
+    "id": "inn2",
+    "category": "Innovación y proyección",
+    "text": "El equipo usa una escala autorreportada diaria (tipo ESAS) junto a un wearable que mide saturación y frecuencia cardíaca. ¿Qué limitación debe tenerse presente?",
+    "options": [
+      { "text": "El dolor, al ser subjetivo, sigue dependiendo del reporte de la persona y no puede medirse por el dispositivo", "correct": true },
+      { "text": "Los wearables reemplazan por completo la necesidad de visitas presenciales", "correct": false },
+      { "text": "Las escalas autorreportadas solo son válidas en pacientes oncológicos", "correct": false },
+      { "text": "La telemonitorización elimina la necesidad de contacto con el cuidador", "correct": false }
+    ],
+    "explanation": "El dolor es subjetivo: ningún dispositivo lo mide, y sigue dependiendo de lo que reporte la persona."
+  },
+  {
+    "id": "inn3",
+    "category": "Innovación y proyección",
+    "text": "Una familia mayor, en zona rural, tiene dificultades para usar la app de telemonitorización. ¿Cuál es la conducta recomendada?",
+    "options": [
+      { "text": "Adaptar la estrategia y volver al contacto telefónico y a la visita presencial", "correct": true },
+      { "text": "Excluir a esa familia del programa domiciliario", "correct": false },
+      { "text": "Exigir que un familiar joven se traslade para gestionar la tecnología", "correct": false },
+      { "text": "Reemplazar las visitas por mensajes de texto únicamente", "correct": false }
+    ],
+    "explanation": "La tecnología se adapta a la familia y no al revés: si la app no funciona para ellos, se vuelve al teléfono y a la visita presencial."
+  },
+  {
+    "id": "inn4",
+    "category": "Innovación y proyección",
+    "text": "Pensando en la proyección futura de los cuidados paliativos domiciliarios, ¿qué rol se espera que cumpla la tecnología?",
+    "options": [
+      { "text": "Complementar y ampliar la presencia compasiva del equipo, sin reemplazar nunca la visita presencial", "correct": true },
+      { "text": "Sustituir progresivamente las visitas por seguimiento exclusivamente remoto", "correct": false },
+      { "text": "Estandarizar el cuidado eliminando la necesidad de adaptarlo a cada familia", "correct": false },
+      { "text": "Concentrarse solo en el registro administrativo, sin impacto clínico directo", "correct": false }
+    ],
+    "explanation": "La tecnología complementa y amplía la presencia compasiva del equipo, pero nunca reemplaza la visita presencial."
+  },
+
+  {
+    "id": "est1",
+    "category": "Estrategias prácticas",
+    "text": "Un enfermero comienza a evitar visitas a cierto paciente y tiene recuerdos intrusivos de fallecimientos recientes. ¿Qué fenómeno describe esto, y qué estrategia es más apropiada?",
+    "options": [
+      { "text": "Fatiga por compasión; conviene abordarla con supervisión clínica y espacios de reflexión compartida", "correct": true },
+      { "text": "Burnout institucional; se resuelve únicamente con licencia prolongada", "correct": false },
+      { "text": "Claudicación familiar; requiere intervención exclusiva con la familia del paciente", "correct": false },
+      { "text": "Duelo patológico del paciente; no corresponde al equipo de salud", "correct": false }
+    ],
+    "explanation": "La evitación y los recuerdos intrusivos son signos de fatiga por compasión; se abordan con supervisión clínica y espacios de reflexión compartida."
+  },
+  {
+    "id": "est2",
+    "category": "Estrategias prácticas",
+    "text": "Un equipo implementa rituales de cierre tras cada fallecimiento y espacios de reflexión clínica compartida. ¿Qué objetivo cumplen?",
+    "options": [
+      { "text": "Procesar el duelo acumulado y sostener la resiliencia del equipo", "correct": true },
+      { "text": "Cumplir un requisito administrativo obligatorio", "correct": false },
+      { "text": "Evaluar el desempeño individual de cada profesional", "correct": false },
+      { "text": "Sustituir la necesidad de supervisión clínica externa", "correct": false }
+    ],
+    "explanation": "Los rituales de cierre y la reflexión compartida ayudan a procesar el duelo acumulado y a sostener la resiliencia del equipo."
+  },
+  {
+    "id": "est3",
+    "category": "Estrategias prácticas",
+    "text": "Desde lo institucional, ¿qué estrategia contribuye más directamente a prevenir el desgaste del equipo?",
+    "options": [
+      { "text": "Cargas de trabajo razonables, tiempo protegido para la reflexión y reconocimiento del equipo", "correct": true },
+      { "text": "Aumentar la cantidad de pacientes asignados para optimizar recursos", "correct": false },
+      { "text": "Reducir los espacios de supervisión clínica para priorizar el tiempo con pacientes", "correct": false },
+      { "text": "Rotar constantemente al personal entre servicios sin continuidad", "correct": false }
+    ],
+    "explanation": "La institución previene el desgaste con cargas de trabajo razonables, tiempo protegido para la reflexión y reconocimiento del equipo."
+  },
+  {
+    "id": "est4",
+    "category": "Estrategias prácticas",
+    "text": "Un profesional dice que \"sigue sintiendo mucho\" ante cada fallecimiento, pese a los años de experiencia, y duda si eso significa que no está preparado. ¿Qué debería transmitirle el equipo?",
+    "options": [
+      { "text": "Que la resiliencia no implica dejar de sentir, sino poder seguir sintiendo y sostener el acompañamiento", "correct": true },
+      { "text": "Que debería considerar cambiar de especialidad", "correct": false },
+      { "text": "Que es un signo inequívoco de burnout que requiere licencia inmediata", "correct": false },
+      { "text": "Que la experiencia debería haber eliminado esa sensibilidad", "correct": false }
+    ],
+    "explanation": "La resiliencia no implica dejar de sentir, sino poder seguir sintiendo y sostener el acompañamiento."
   }
 ]

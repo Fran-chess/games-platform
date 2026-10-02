@@ -13,7 +13,7 @@ import { pickNextQuestion } from '@/utils/questionRotation';
  * Subirla cuando cambie el set de preguntas de un evento a otro: los ids se
  * reutilizan y el historial del evento anterior dejaría de tener sentido.
  */
-const PROGRESS_VERSION = 1;
+const PROGRESS_VERSION = 2;
 
 // --- STORE SIMPLIFICADO PARA EL JUEGO ---
 export const useGameStore = create<GameStore>()(

@@ -75,6 +75,9 @@ Reglas:
   se reinicia el ciclo sin repetir la última. El historial (`askedQuestionIds`) se persiste en
   `localStorage` (`darsalud-roulette-progress`) para que sobreviva a cerrar la app; para otro
   evento con ids reutilizados, subir `PROGRESS_VERSION` en `store/gameStore.ts`.
+- Las opciones se mezclan al sortear la pregunta (`pickNextQuestion`), así que el orden del
+  JSON puede seguir al material del cliente aunque concentre la correcta en una letra. La
+  respuesta se evalúa por `option.correct`, nunca por posición.
 - El material fuente del evento (PDF de preguntas) va en `apps/roulette/material/` y las
   capturas en `apps/roulette/imagenes-captura/`; ambas carpetas están en `.gitignore`.
 - Las respuestas correctas se transcriben **exactamente** como las marca el material del

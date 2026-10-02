@@ -28,17 +28,17 @@ export const AVAILABLE_COLORS = [
 /**
  * Mapeo de categorías específicas a sus colores designados.
  *
- * Las 6 temáticas del congreso se dibujan en el orden en que aparecen en
+ * Las 6 temáticas del evento se dibujan en el orden en que aparecen en
  * `questions.json`; el azul intenso se repite en dos segmentos no adyacentes
- * (Autonomía y Salud cognitiva) para que ningún par de vecinos comparta color.
+ * (Abordaje ético y Manejo de síntomas) para que ningún par de vecinos comparta color.
  */
 export const CATEGORY_COLOR_MAP: Record<string, string> = {
-  "Autonomía": ROULETTE_COLORS.AZUL_INTENSO,
-  "Movilidad": ROULETTE_COLORS.VERDE_SALUD,
-  "Alimentación": ROULETTE_COLORS.AMARILLO_DS,
-  "Salud cognitiva": ROULETTE_COLORS.AZUL_INTENSO,
-  "Red social y bienestar": ROULETTE_COLORS.CELESTE_MEDIO,
-  "Mitos": ROULETTE_COLORS.ROSADO_LILA,
+  "Abordaje ético": ROULETTE_COLORS.AZUL_INTENSO,
+  "Transiciones": ROULETTE_COLORS.VERDE_SALUD,
+  "Trayectorias": ROULETTE_COLORS.AMARILLO_DS,
+  "Manejo de síntomas": ROULETTE_COLORS.AZUL_INTENSO,
+  "Innovación y proyección": ROULETTE_COLORS.CELESTE_MEDIO,
+  "Estrategias prácticas": ROULETTE_COLORS.ROSADO_LILA,
 };
 
 /** Colores de texto candidatos para los títulos de los segmentos */

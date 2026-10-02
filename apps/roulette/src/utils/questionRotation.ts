@@ -8,6 +8,9 @@
  *
  * `askedIds` es el historial cronológico de ids ya mostrados, con todas las
  * categorías mezcladas; la función solo toca los ids que pertenecen al pool.
+ *
+ * Las opciones de la pregunta elegida salen mezcladas: el material del cliente
+ * suele concentrar la correcta en la misma letra y el público lo aprende.
  */
 
 import type { Question } from '@/types';
@@ -22,12 +25,22 @@ function pickRandom<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)];
 }
 
+/** Copia de la pregunta con las opciones en orden aleatorio (Fisher-Yates) */
+function withShuffledOptions(question: Question): Question {
+  const options = [...question.options];
+  for (let i = options.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [options[i], options[j]] = [options[j], options[i]];
+  }
+  return { ...question, options };
+}
+
 /**
  * Elige la próxima pregunta de un pool sin repetir las ya mostradas
  *
  * @param pool - Preguntas de la categoría ganadora
  * @param askedIds - Ids ya mostrados, del más antiguo al más reciente
- * @returns La pregunta y el historial actualizado; null si el pool está vacío
+ * @returns La pregunta (con opciones mezcladas) y el historial actualizado; null si el pool está vacío
  */
 export function pickNextQuestion(pool: Question[], askedIds: readonly string[]): QuestionDraw | null {
   if (pool.length === 0) return null;
@@ -35,7 +48,7 @@ export function pickNextQuestion(pool: Question[], askedIds: readonly string[]):
   const pending = pool.filter((question) => !askedIds.includes(question.id));
   if (pending.length > 0) {
     const question = pickRandom(pending);
-    return { question, askedIds: [...askedIds, question.id] };
+    return { question: withShuffledOptions(question), askedIds: [...askedIds, question.id] };
   }
 
   // Ciclo completo: se libera la categoría y arranca uno nuevo sin repetir la última
@@ -45,7 +58,7 @@ export function pickNextQuestion(pool: Question[], askedIds: readonly string[]):
   const question = pickRandom(candidates);
 
   return {
-    question,
+    question: withShuffledOptions(question),
     askedIds: [...askedIds.filter((id) => !poolIds.has(id)), question.id],
   };
 }
